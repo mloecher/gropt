@@ -5,7 +5,7 @@ The toolbox allows for gradient waveforms to be designed that better utilize ava
 # Installation
 The optimization is written in C and can be found in the src/ directory.
 
-A very basic idea of how to compile for C is included in src/make.txt, however modifications would need to made for input and output as it only runs a test case when run in C.  For easier usage use one of the wrappers
+A very basic idea of how to compile for C is included in src/make.txt, however modifications would need to made for input and output as it only runs a test case when run in C.  For easier usage use one of the wrappers:
 
 ### Python
 
