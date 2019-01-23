@@ -7,7 +7,7 @@
  */
 void cvxop_pns_init(cvxop_pns *opP, int N, double dt, int ind_inv, double thresh, int verbose) 
 {
-    opP->active = 0;
+    opP->active = 1;
     opP->N = N;
     opP->dt = dt;
     opP->ind_inv = ind_inv; 
@@ -16,7 +16,7 @@ void cvxop_pns_init(cvxop_pns *opP, int N, double dt, int ind_inv, double thresh
 
     cvxmat_alloc(&opP->coeff, N, 1);
     cvxmat_alloc(&opP->Ptau, N, 1);
-
+ 
     cvxmat_alloc(&opP->Px, N-1, 1);
     cvxmat_alloc(&opP->zP, N-1, 1);
     cvxmat_alloc(&opP->zPbuff, N-1, 1);
@@ -28,6 +28,20 @@ void cvxop_pns_init(cvxop_pns *opP, int N, double dt, int ind_inv, double thresh
     for (int i = 0; i < N; i++) {
         opP->coeff.vals[i] = c / pow((c + dt*(N-1) - dt*i), 2.0) / Smin;
     }
+
+    double coeff_max = opP->coeff.vals[N-1];
+    int n_conv = 0;
+    int ind_conv = N-1-n_conv;
+    while ( (ind_conv > 0) && ((opP->coeff.vals[ind_conv]/coeff_max) > .02) ) {
+        n_conv += 1;
+        ind_conv = N-1-n_conv;
+    }
+
+    opP->n_conv = n_conv;
+
+    printf("    PNS n_conv :     %d \n", opP->n_conv);
+
+    if (thresh <= 0.0) {opP->active = 0;}
 
 }
 
@@ -56,7 +70,12 @@ void cvxop_pns_add2taumx(cvxop_pns *opP, cvx_mat *taumx)
         cvxmat_setvals(&(opP->Ptau), 0.0);
 
         for (int j = 0; j < (opP->N); j++) {
-            for (int i = j; i < (opP->N); i++) {
+            
+            int i_start = j;
+            int i_end = i_start + opP->n_conv;
+            if (i_end > (opP->N)) {i_end = (opP->N);}
+
+            for (int i = i_start; i < i_end; i++) {
                 double val;
                 if (i == 0) {
                     val = -opP->zP.vals[i];
@@ -88,7 +107,12 @@ void cvxop_pns_update(cvxop_pns *opP, cvx_mat *txmx, double rr)
         // MATH: Px = (P*txmx)
         cvxmat_setvals(&(opP->Px), 0.0);
         for (int j = 0; j < (opP->N-1); j++) {
-            for (int i = 0; i <= j; i++) {
+            
+            int i_end = j;
+            int i_start = i_end - opP->n_conv;
+            if (i_start < 0) {i_start = 0;}
+
+            for (int i = i_start; i <= i_end; i++) {
                 int c_ind = opP->N-1-j+i;
                 opP->Px.vals[j] += opP->coeff.vals[c_ind] * (txmx->vals[i+1]-txmx->vals[i]);
             }
@@ -135,7 +159,12 @@ int cvxop_pns_check(cvxop_pns *opP, cvx_mat *G)
 
     cvxmat_setvals(&(opP->Px), 0.0);
     for (int j = 0; j < (opP->N-1); j++) {
-        for (int i = 0; i <= j; i++) {
+        
+        int i_end = j;
+        int i_start = i_end - opP->n_conv;
+        if (i_start < 0) {i_start = 0;}
+
+        for (int i = i_start; i <= i_end; i++) {
             int c_ind = opP->N-1-j+i;
             opP->Px.vals[j] += opP->coeff.vals[c_ind] * (G->vals[i+1]-G->vals[i]);
         }

@@ -15,10 +15,10 @@ except ImportError:
 from Cython.Build import cythonize
 import numpy
 
-sourcefiles = ['cvxg.pyx', '../src/cvx_matrix.c', '../src/op_gradient.c', '../src/op_bval.c', '../src/op_beta.c', '../src/op_eddy.c', '../src/op_slewrate.c', '../src/op_moments.c', '../src/op_pns.c']
+sourcefiles = ['gropt.pyx', '../src/cvx_matrix.c', '../src/op_gradient.c', '../src/op_bval.c', '../src/op_beta.c', '../src/op_eddy.c', '../src/op_slewrate.c', '../src/op_moments.c', '../src/op_pns.c']
 
 if _platform == "darwin":
-    extensions = [Extension("cvxg",
+    extensions = [Extension("gropt",
                     sourcefiles,
                     language="c",
                     include_dirs=[".",  "../src", "/usr/local/include/", numpy.get_include()],
@@ -26,12 +26,11 @@ if _platform == "darwin":
                     extra_compile_args=['-std=c11'],
                    )]
 elif _platform == "win32":
-    extensions = [Extension("cvxg",
+    extensions = [Extension("gropt",
                     sourcefiles,
                     language="c",
                     include_dirs=[".", "../src", numpy.get_include()],
                     library_dirs=[".", "../src"],
-                    extra_compile_args=['-std=c11'],
                    )]
 
 setup(

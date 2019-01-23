@@ -11,6 +11,8 @@
 #include "op_gradient.h"
 #include "op_pns.h"
 
+#define EDDY_PARAMS_LEN 2
+#define MOMENTS_PARAMS_LEN 6
 
 void cvx_optimize_kernel(cvx_mat *G, cvxop_gradient *opG, cvxop_slewrate *opD, 
                         cvxop_moments *opQ, cvxop_eddy *opE, cvxop_beta *opC, 
@@ -199,24 +201,24 @@ void cvx_optimize_kernel(cvx_mat *G, cvxop_gradient *opG, cvxop_slewrate *opD,
 
                 if (bad_moments > 0) {
                     cvxop_moments_reweight(opQ, bval_reduction);
-                    printf("  ^^ moments ^^  ");
+                    if (verbose > 0) {printf("  ^^ moments ^^  ");}
                 }
                 if (bad_slew > 0) {
                     cvxop_slewrate_reweight(opD, bval_reduction);
-                    printf("  ^^ slew ^^  ");
+                    if (verbose > 0) {printf("  ^^ slew ^^  ");}
                 }
                 if (bad_eddy > 0) {
                     cvxop_eddy_reweight(opE, bval_reduction);
-                    printf("  ^^ eddy ^^  ");
+                    if (verbose > 0) {printf("  ^^ eddy ^^  ");}
                 }
                 
                 if ((bad_slew < 1) && (bad_moments < 1) && (bad_eddy < 1)) {
                     cvxop_bval_reweight(opB, bval_reduction);
                     cvxop_beta_reweight(opC, bval_reduction);
-                    printf("  ^^ bval ^^  ");
+                    if (verbose > 0) {printf("  ^^ bval ^^  ");}
                 }                
 
-                printf("\n");
+                if (verbose > 0) { printf("\n");}
 
                 cvxmat_setvals(&tau, 0.0);
                 cvxop_slewrate_add2tau(opD, &tau);
@@ -310,9 +312,9 @@ void interp(cvx_mat *G, double dt_in, double dt_out, double TE, double T_readout
 
 
 
-void run_kernel_diff(double **G_out, int *N_out, double **ddebug,
-                            int N, double dt, double gmax, double smax, 
-                            double *moment_tols, double TE, 
+void run_kernel_diff(double **G_out, int *N_out, double **ddebug, int verbose,
+                            int N, double dt, double gmax, double smax, double TE, 
+                            int N_moments, double *moments_params, double PNS_thresh,  
                             double T_readout, double T_90, double T_180, int diffmode,
                             double bval_weight, double slew_weight, double moments_weight, 
                             double bval_reduce,  double dt_out,
@@ -320,7 +322,6 @@ void run_kernel_diff(double **G_out, int *N_out, double **ddebug,
                             int is_Gin, double *G_in)
 {
     double relax = 1.7;
-    int verbose = 1;
 
     if (verbose > 0) {
         printf ("\nFirst pass, N = %d    dt = %.2e\n\n", N, dt);
@@ -382,18 +383,22 @@ void run_kernel_diff(double **G_out, int *N_out, double **ddebug,
     cvxop_slewrate_init(&opD, N, dt, smax, slew_weight, verbose);
 
     cvxop_pns opP;
-    cvxop_pns_init(&opP, N, dt, ind_inv, 1.0, verbose);
+    cvxop_pns_init(&opP, N, dt, ind_inv, PNS_thresh, verbose);
 
     cvxop_moments opQ;
     cvxop_moments_init(&opQ, N, ind_inv, dt, moments_weight, verbose);
-    cvxop_moments_addrow(&opQ, 0, 0, 1.0e-3);
-    cvxop_moments_addrow(&opQ, 1, 0, 1.0e-3);
+    for (int i = 0; i < N_moments; i++) {
+        cvxop_moments_addrow(&opQ, moments_params[MOMENTS_PARAMS_LEN*i+1], 
+                                   moments_params[MOMENTS_PARAMS_LEN*i+4], 
+                                   moments_params[MOMENTS_PARAMS_LEN*i+5]);
+    }
     cvxop_moments_finishinit(&opQ);
+    
     
     cvxop_eddy opE;
     cvxop_eddy_init(&opE, N, ind_inv, dt, .01, verbose);
     for (int i = 0; i < N_eddy; i++) {
-        cvxop_eddy_addrow(&opE, (eddy_params[2*i] * 1.0e-3), eddy_params[2*i+1]);
+        cvxop_eddy_addrow(&opE, (eddy_params[EDDY_PARAMS_LEN*i] * 1.0e-3), eddy_params[EDDY_PARAMS_LEN*i+1]);
     }
     cvxop_eddy_finishinit(&opE);
     
@@ -450,18 +455,18 @@ void run_kernel_diff(double **G_out, int *N_out, double **ddebug,
 }
 
 
-void run_kernel_diff_fixedN(double **G_out, int *N_out, double **ddebug,
-                            int N0, double gmax, double smax, 
-                            double *moment_tols, double TE, 
+void run_kernel_diff_fixedN(double **G_out, int *N_out, double **ddebug, int verbose,
+                            int N0, double gmax, double smax, double TE, 
+                            int N_moments, double *moments_params, double PNS_thresh,  
                             double T_readout, double T_90, double T_180, int diffmode, double dt_out,
                             int N_eddy, double *eddy_params)
 {
     int N = N0;
     double dt = (TE-T_readout) * 1.0e-3 / (double) N;
 
-    run_kernel_diff(G_out, N_out, ddebug,
-                        N, dt, gmax, smax, 
-                        moment_tols, TE, 
+    run_kernel_diff(G_out, N_out, ddebug, verbose, 
+                        N, dt, gmax, smax, TE, 
+                        N_moments, moments_params, PNS_thresh,
                         T_readout, T_90, T_180, diffmode,
                         10.0, 1.0, 10.0, 
                         10.0,  dt_out,
@@ -470,18 +475,18 @@ void run_kernel_diff_fixedN(double **G_out, int *N_out, double **ddebug,
 }
 
 
-void run_kernel_diff_fixedN_Gin(double **G_out, int *N_out, double **ddebug,
-                                double *G_in, int N0, double gmax, double smax, 
-                                double *moment_tols, double TE, 
+void run_kernel_diff_fixedN_Gin(double **G_out, int *N_out, double **ddebug, int verbose,
+                                double *G_in, int N0, double gmax, double smax, double TE, 
+                                int N_moments, double *moments_params, double PNS_thresh,  
                                 double T_readout, double T_90, double T_180, int diffmode, double dt_out,
                                 int N_eddy, double *eddy_params)
 {
     int N = N0;
     double dt = (TE-T_readout) * 1.0e-3 / (double) N;
 
-    run_kernel_diff(G_out, N_out, ddebug,
-                        N, dt, gmax, smax, 
-                        moment_tols, TE, 
+    run_kernel_diff(G_out, N_out, ddebug, verbose,
+                        N, dt, gmax, smax, TE, 
+                        N_moments, moments_params, PNS_thresh,
                         T_readout, T_90, T_180, diffmode,
                         10.0, 1.0, 10.0, 
                         10.0,  dt_out,
@@ -492,9 +497,9 @@ void run_kernel_diff_fixedN_Gin(double **G_out, int *N_out, double **ddebug,
 
 
 
-void run_kernel_diff_fixeddt(double **G_out, int *N_out, double **ddebug,
-                            double dt0, double gmax, double smax, 
-                            double *moment_tols, double TE, 
+void run_kernel_diff_fixeddt(double **G_out, int *N_out, double **ddebug, int verbose,
+                            double dt0, double gmax, double smax, double TE,
+                            int N_moments, double *moments_params, double PNS_thresh, 
                             double T_readout, double T_90, double T_180, int diffmode, double dt_out,
                             int N_eddy, double *eddy_params)
 {
@@ -507,9 +512,9 @@ void run_kernel_diff_fixeddt(double **G_out, int *N_out, double **ddebug,
     // double dt = (TE-T_readout) * 1.0e-3 / (double) N;
     double dt = dt0;
 
-    run_kernel_diff(G_out, N_out, ddebug,
-                            N, dt, gmax, smax, 
-                            moment_tols, TE, 
+    run_kernel_diff(G_out, N_out, ddebug, verbose,
+                            N, dt, gmax, smax, TE, 
+                            N_moments, moments_params, PNS_thresh,
                             T_readout, T_90, T_180, diffmode,
                             10.0, 1.0, 10.0, 
                             10.0,  dt_out,
@@ -535,10 +540,15 @@ int main (void)
     int N_eddy = 0; 
     double *eddy_params;
 
+    int N_moments = 0; 
+    double *moments_params;
+
+    double PNS_thresh = 0.0;
+
     double m_tol[3]={0.0, 0.0, 0.0};
 
-    run_kernel_diff_fixedN(&G, &N, &debug, 256, 0.04, 20.0,
-                            m_tol, 200.0, 12.0, 4.0, 8.0, diffmode, -1.0, N_eddy, eddy_params);
+    run_kernel_diff_fixedN(&G, &N, &debug, 1, 256, 0.04, 20.0, 200.0, N_moments, moments_params, PNS_thresh, 
+                            12.0, 4.0, 8.0, diffmode, -1.0, N_eddy, eddy_params);
 
     return 0;
 }

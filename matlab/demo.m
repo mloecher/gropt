@@ -9,7 +9,7 @@ T_180 = 6.0;
 dt = 0.10e-3;
 diffmode = 2;
 
-G = mex_CVXG_fixdt(gmax, smax, MMT, TE, T_readout, T_90, T_180, dt, diffmode);
+G = mex_gropt_diff_fixdt(gmax, smax, MMT, TE, T_readout, T_90, T_180, dt, diffmode);
 
 plot_waveform(G, T_readout, dt)
 %% This will make the exact same waveform as the last one, but with fixed N

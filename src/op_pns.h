@@ -16,6 +16,8 @@ typedef struct {
     double dt;
     double thresh;
 
+    int n_conv;
+
     cvx_mat coeff; 
     cvx_mat Px;
 
