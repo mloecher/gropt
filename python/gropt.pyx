@@ -137,3 +137,36 @@ def run_diffkernel_fixdt(gmax, smax, MMT, TE, T_readout, T_90, T_180, diffmode, 
         debug_out[i] = ddebug[i]
 
     return G_return, debug_out
+
+
+def run_kernel_fixdt(gmax, smax, m_params, TE, T_readout, T_90, T_180, diffmode, dt = 0.4e-3, dt_out = -1.0, 
+                         eddy = [], pns_thresh = -1.0, verbose = 1):
+
+    m_params = np.array(m_params).flatten() 
+
+    N_moments = m_params.size//6
+    m_params = np.ascontiguousarray(np.ravel(m_params), np.float64)
+    cdef np.ndarray[np.float64_t, ndim=1, mode="c"] m_params_c = m_params
+
+    cdef double *G_out
+    cdef int N_out  
+    cdef double *ddebug
+
+    N_eddy = len(eddy)//2
+    if N_eddy > 0:
+        eddy_params = np.ascontiguousarray(np.ravel(eddy), np.float64)
+    else:
+        eddy_params = np.ascontiguousarray(np.ravel(np.zeros(2)), np.float64)
+    cdef np.ndarray[np.float64_t, ndim=1, mode="c"] eddy_params_c = eddy_params
+
+    _run_kernel_diff_fixeddt(&G_out, &N_out, &ddebug, verbose, dt, gmax, smax, TE, N_moments, &m_params_c[0], pns_thresh, T_readout, T_90, T_180, diffmode, dt_out, N_eddy, &eddy_params_c[0])
+
+    G_return = np.zeros(N_out)
+    for i in range(N_out):
+        G_return[i] = G_out[i]
+
+    debug_out = np.zeros(480000)
+    for i in range(480000):
+        debug_out[i] = ddebug[i]
+
+    return G_return, debug_out

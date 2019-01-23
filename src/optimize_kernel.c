@@ -91,9 +91,6 @@ void cvx_optimize_kernel(cvx_mat *G, cvxop_gradient *opG, cvxop_slewrate *opD,
         // xbar = gradient_limits(xbar)
         cvxop_gradient_limiter(opG, &xbar);
 
-        // if (opB->active > 0 ) {
-        //     cvxop_bval_proxxbar(opB, &xbar, eps);
-        // }
 
         // txmx = 2*xbar-G;
         cvxmat_subractMatMult1(&txmx, 2.0, &xbar, G);
@@ -117,7 +114,7 @@ void cvx_optimize_kernel(cvx_mat *G, cvxop_gradient *opG, cvxop_slewrate *opD,
         cvxmat_updateG(G, relax, &xbar);
 
         // Need checks here
-        if ( count % 100 == 0 ) {
+        if ( count % check_amount == 0 ) {
 
 
             obj1 = cvxop_gradient_getbval(opG, G);
@@ -329,10 +326,18 @@ void run_kernel_diff(double **G_out, int *N_out, double **ddebug, int verbose,
     }
 
     // This is the old style, but I don't think its right for when inversion time doesn't line up with dt
-    int ind_inv = round((N + T_readout/(dt*1.0e3))/2.0);
-    int ind_end90 = floor(T_90*(1e-3/dt));
-    int ind_start180 = ind_inv - floor(T_180*(1e-3/dt/2));
-    int ind_end180 = ind_inv + floor(T_180*(1e-3/dt/2));
+    int ind_inv, ind_end90, ind_start180, ind_end180;
+    if (diffmode > 0) {
+        ind_inv = round((N + T_readout/(dt*1.0e3))/2.0);
+        ind_end90 = floor(T_90*(1e-3/dt));
+        ind_start180 = ind_inv - floor(T_180*(1e-3/dt/2));
+        ind_end180 = ind_inv + floor(T_180*(1e-3/dt/2));
+    } else {
+        ind_inv = 9999999;
+        ind_end90 = 0;
+        ind_start180 = ind_inv;
+        ind_end180 = ind_inv;
+    }
     
     /*
     // Calculate times of inversion and rf dead times
@@ -366,6 +371,11 @@ void run_kernel_diff(double **G_out, int *N_out, double **ddebug, int verbose,
     } else if (diffmode == 2) {
         opC.active = 0; 
         opB.active = 1;
+        N_converge = 8;
+        stop_increase = 1.0e-3; 
+    } else {
+        opC.active = 0; 
+        opB.active = 0;
         N_converge = 8;
         stop_increase = 1.0e-3; 
     }

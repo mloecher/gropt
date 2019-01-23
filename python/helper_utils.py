@@ -66,13 +66,14 @@ def plot_moments(G, T_readout, dt):
     plt.axhline(0, color='k')
 
 
-def get_moment_plots(G, T_readout, dt):
+def get_moment_plots(G, T_readout, dt, diffmode = 1):
 
     TE = G.size*dt*1e3 + T_readout
     tINV = int(np.floor(TE/dt/1.0e3/2.0))
     GAMMA   = 42.58e3; 
     INV = np.ones(G.size)
-    INV[tINV:] = -1
+    if diffmode > 0:
+        INV[tINV:] = -1
     Nm = 5
     tvec = np.arange(G.size)*dt
     tMat = np.zeros((Nm, G.size))
@@ -89,7 +90,7 @@ def get_moment_plots(G, T_readout, dt):
 
     return out
 
-def plot_waveform(G, TE, T_readout, plot_moments = False, plot_eddy = False, suptitle = '', eddy_lines=[]):
+def plot_waveform(G, TE, T_readout, diffmode = 1, plot_moments = False, plot_eddy = False, suptitle = '', eddy_lines=[]):
     sns.set()
     sns.set_context("talk")
     
@@ -106,13 +107,14 @@ def plot_waveform(G, TE, T_readout, plot_moments = False, plot_eddy = False, sup
     else:
         f.suptitle(blabel)
         
-    axarr[0, 0].axvline(tINV, linestyle='--', color='0.7')
+    if diffmode > 1:
+        axarr[0, 0].axvline(tINV, linestyle='--', color='0.7')
     axarr[0, 0].plot(tt, G*1000)
     axarr[0, 0].set_title('Gradient')
     axarr[0, 0].set_xlabel('t [ms]')
 #     axarr[0, 0].set_ylabel('G [mT/m]')
     
-    mm = get_moment_plots(G, T_readout, (TE-T_readout) * 1.0e-3 / G.size)
+    mm = get_moment_plots(G, T_readout, (TE-T_readout) * 1.0e-3 / G.size, diffmode)
     axarr[0, 1].axhline(linestyle='--', color='0.7')
     for i in range(3):
         mmt = mm[i]

@@ -1,3 +1,7 @@
+*.mexw64
+*.asv
+python/testing/
+
 #################
 ## Defaults from github python
 
