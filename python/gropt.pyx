@@ -161,7 +161,7 @@ def run_kernel_fixdt(gmax, smax, m_params, TE, T_readout, T_90, T_180, diffmode,
 
     _run_kernel_diff_fixeddt(&G_out, &N_out, &ddebug, verbose, dt, gmax, smax, TE, N_moments, &m_params_c[0], pns_thresh, T_readout, T_90, T_180, diffmode, dt_out, N_eddy, &eddy_params_c[0])
 
-    G_return = np.zeros(N_out)
+    G_return = np.zeros(N_out) 
     for i in range(N_out):
         G_return[i] = G_out[i]
 

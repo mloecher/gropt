@@ -38,6 +38,7 @@ void cvxop_pns_init(cvxop_pns *opP, int N, double dt, int ind_inv, double thresh
     }
 
     opP->n_conv = n_conv;
+    // opP->n_conv = N;
 
     printf("    PNS n_conv :     %d \n", opP->n_conv);
 
