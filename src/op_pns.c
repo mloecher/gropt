@@ -32,7 +32,7 @@ void cvxop_pns_init(cvxop_pns *opP, int N, double dt, int ind_inv, double thresh
     double coeff_max = opP->coeff.vals[N-1];
     int n_conv = 0;
     int ind_conv = N-1-n_conv;
-    while ( (ind_conv > 0) && ((opP->coeff.vals[ind_conv]/coeff_max) > .02) ) {
+    while ( (ind_conv > 0) && ((opP->coeff.vals[ind_conv]/coeff_max) > .01) ) {
         n_conv += 1;
         ind_conv = N-1-n_conv;
     }
@@ -40,7 +40,9 @@ void cvxop_pns_init(cvxop_pns *opP, int N, double dt, int ind_inv, double thresh
     opP->n_conv = n_conv;
     // opP->n_conv = N;
 
-    printf("    PNS n_conv :     %d \n", opP->n_conv);
+    if (opP->verbose>0) { 
+        printf("    PNS n_conv :     %d \n", opP->n_conv);
+    }
 
     if (thresh <= 0.0) {opP->active = 0;}
 
@@ -178,7 +180,9 @@ int cvxop_pns_check(cvxop_pns *opP, cvx_mat *G)
         }
     }
     
-    printf("    Max PNS:     %f \n", max_pns);
+    if (opP->verbose>0) {  
+        printf("    Max PNS:     %f \n", max_pns);
+    }
 
     return 1;
 }
