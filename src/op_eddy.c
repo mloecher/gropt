@@ -22,6 +22,7 @@ void cvxop_eddy_init(cvxop_eddy *opE, int N, int ind_inv, double dt,
     cvxmat_alloc(&opE->weights, MAXROWS, 1);
     cvxmat_alloc(&opE->checks, MAXROWS, 1);
     cvxmat_alloc(&opE->tolerances, MAXROWS, 1);
+    cvxmat_alloc(&opE->goals, MAXROWS, 1);
     cvxmat_alloc(&opE->sigE, MAXROWS, 1);
 
     cvxmat_alloc(&opE->zE, MAXROWS, 1);
@@ -37,7 +38,7 @@ void cvxop_eddy_init(cvxop_eddy *opE, int N, int ind_inv, double dt,
  * Add a lambda constraint
  * lambda units are seconds (like dt)
  */
-void cvxop_eddy_addrow(cvxop_eddy *opE, double lambda, double tol)
+void cvxop_eddy_addrow(cvxop_eddy *opE, double lambda, double goal, double tol, double offset)
 {
     for (int i = 0; i < opE->N; i++) {
         double ii = i;
@@ -45,6 +46,7 @@ void cvxop_eddy_addrow(cvxop_eddy *opE, double lambda, double tol)
         cvxmat_set(&(opE->E0), opE->Nrows, opE->N-1-i, val);
     }
     opE->tolerances.vals[opE->Nrows] = tol;
+    opE->goals.vals[opE->Nrows] = goal;
     opE->Nrows += 1;
 }
 
@@ -184,11 +186,23 @@ void cvxop_eddy_update(cvxop_eddy *opE, cvx_mat *txmx, double rr)
             opE->zEbuff.vals[j] = opE->zE.vals[j] + opE->Ex.vals[j];
         }
 
+
         // MATH: zEbar = clip( zEbuff/sigE , [-upper_tol, lower_tol])
-        // But right now always just set to 0
+        double cushion = 0.99;
         for (int j = 0; j < opE->Nrows; j++) {
-            opE->zEbar.vals[j] = 0.0;
+            double low =  (opE->goals.vals[j] - cushion*opE->tolerances.vals[j]) * opE->weights.vals[j];
+            double high = (opE->goals.vals[j] + cushion*opE->tolerances.vals[j]) * opE->weights.vals[j];
+            double val = opE->zEbuff.vals[j] / opE->sigE.vals[j];
+            if (val < low) {
+                opE->zEbar.vals[j] = low;
+            } else if (val > high) {
+                opE->zEbar.vals[j] = high;
+            } else {
+                opE->zEbar.vals[j] = val;
+            }
+            
         }
+
 
         // MATH: zEbar = zEbuff - sigE*zEbar
         for (int j = 0; j < opE->Nrows; j++) {
@@ -226,6 +240,21 @@ int cvxop_eddy_check(cvxop_eddy *opE, cvx_mat *G)
         }
     }
 
+    // Set checks to be 0 if within tolerance, otherwise set to the ratio of eddy current to tolerance
+    cvxmat_setvals(&(opE->checks), 0.0);
+    for (int j = 0; j < opE->Nrows; j++) {
+        double tol = opE->tolerances.vals[j];
+        double low =  opE->goals.vals[j] - tol;
+        double high = opE->goals.vals[j] + tol;
+        double diff;
+        if (opE->Ex.vals[j] < low) {
+            diff = opE->goals.vals[j] - opE->Ex.vals[j];
+            opE->checks.vals[j] = diff / tol;
+        } else if (opE->Ex.vals[j] > high) {
+            diff = opE->Ex.vals[j] - opE->goals.vals[j];
+            opE->checks.vals[j] = diff / tol;
+        }
+    }
 
     int eddy_bad = 0;
 
@@ -253,6 +282,7 @@ void cvxop_eddy_destroy(cvxop_eddy *opE)
     free(opE->weights.vals);
     free(opE->checks.vals);
     free(opE->tolerances.vals);
+    free(opE->goals.vals);
 
 
     free(opE->E0.vals);

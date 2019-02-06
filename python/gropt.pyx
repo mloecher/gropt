@@ -30,6 +30,7 @@ def run_diffkernel_fixN(gmax, smax, MMT, TE, T_readout, T_90, T_180, diffmode, N
     if MMT > 1:
         m_params.append([0.0, 2.0, -1.0, -1.0, 0.0, 1.0e-3])
     m_params = np.array(m_params).flatten()
+    eddy = np.array(eddy).flatten() 
 
     N_moments = m_params.size//6
     m_params = np.ascontiguousarray(np.ravel(m_params), np.float64)
@@ -41,11 +42,11 @@ def run_diffkernel_fixN(gmax, smax, MMT, TE, T_readout, T_90, T_180, diffmode, N
 
     
 
-    N_eddy = len(eddy)//2
+    N_eddy = eddy.size//4
     if N_eddy > 0:
         eddy_params = np.ascontiguousarray(np.ravel(eddy), np.float64)
     else:
-        eddy_params = np.ascontiguousarray(np.ravel(np.zeros(2)), np.float64)
+        eddy_params = np.ascontiguousarray(np.ravel(np.zeros(4)), np.float64)
     cdef np.ndarray[np.float64_t, ndim=1, mode="c"] eddy_params_c = eddy_params
 
     _run_kernel_diff_fixedN(&G_out, &N_out, &ddebug, verbose, N0, gmax, smax, TE, N_moments, &m_params_c[0], pns_thresh, T_readout, T_90, T_180, diffmode, dt_out, N_eddy, &eddy_params_c[0])
@@ -70,6 +71,7 @@ def run_diffkernel_fixN_Gin(G_in, gmax, smax, MMT, TE, T_readout, T_90, T_180, d
     if MMT > 1:
         m_params.append([0.0, 2.0, -1.0, -1.0, 0.0, 1.0e-3])
     m_params = np.array(m_params).flatten()
+    eddy = np.array(eddy).flatten() 
 
     N_moments = m_params.size//6
     m_params = np.ascontiguousarray(np.ravel(m_params), np.float64)
@@ -81,11 +83,11 @@ def run_diffkernel_fixN_Gin(G_in, gmax, smax, MMT, TE, T_readout, T_90, T_180, d
 
     cdef np.ndarray[np.float64_t, ndim=1, mode="c"] G_in_c = np.ascontiguousarray(np.ravel(G_in), np.float64)
 
-    N_eddy = len(eddy)//2
+    N_eddy = eddy.size//4
     if N_eddy > 0:
         eddy_params = np.ascontiguousarray(np.ravel(eddy), np.float64)
     else:
-        eddy_params = np.ascontiguousarray(np.ravel(np.zeros(2)), np.float64)
+        eddy_params = np.ascontiguousarray(np.ravel(np.zeros(4)), np.float64)
     cdef np.ndarray[np.float64_t, ndim=1, mode="c"] eddy_params_c = eddy_params
 
     _run_kernel_diff_fixedN_Gin(&G_out, &N_out, &ddebug, verbose, &G_in_c[0], N0, gmax, smax, TE, N_moments, &m_params_c[0], pns_thresh, T_readout, T_90, T_180, diffmode, dt_out, N_eddy, &eddy_params_c[0])
@@ -110,6 +112,7 @@ def run_diffkernel_fixdt(gmax, smax, MMT, TE, T_readout, T_90, T_180, diffmode, 
     if MMT > 1:
         m_params.append([0.0, 2.0, -1.0, -1.0, 0.0, 1.0e-3])
     m_params = np.array(m_params).flatten() 
+    eddy = np.array(eddy).flatten() 
 
     N_moments = m_params.size//6
     m_params = np.ascontiguousarray(np.ravel(m_params), np.float64)
@@ -119,11 +122,11 @@ def run_diffkernel_fixdt(gmax, smax, MMT, TE, T_readout, T_90, T_180, diffmode, 
     cdef int N_out  
     cdef double *ddebug
 
-    N_eddy = len(eddy)//2
+    N_eddy = eddy.size//4
     if N_eddy > 0:
         eddy_params = np.ascontiguousarray(np.ravel(eddy), np.float64)
     else:
-        eddy_params = np.ascontiguousarray(np.ravel(np.zeros(2)), np.float64)
+        eddy_params = np.ascontiguousarray(np.ravel(np.zeros(4)), np.float64)
     cdef np.ndarray[np.float64_t, ndim=1, mode="c"] eddy_params_c = eddy_params
 
     _run_kernel_diff_fixeddt(&G_out, &N_out, &ddebug, verbose, dt, gmax, smax, TE, N_moments, &m_params_c[0], pns_thresh, T_readout, T_90, T_180, diffmode, dt_out, N_eddy, &eddy_params_c[0])
@@ -143,6 +146,7 @@ def run_kernel_fixdt(gmax, smax, m_params, TE, T_readout, T_90, T_180, diffmode,
                          eddy = [], pns_thresh = -1.0, verbose = 1):
 
     m_params = np.array(m_params).flatten() 
+    eddy = np.array(eddy).flatten() 
 
     N_moments = m_params.size//6
     m_params = np.ascontiguousarray(np.ravel(m_params), np.float64)
@@ -152,11 +156,11 @@ def run_kernel_fixdt(gmax, smax, m_params, TE, T_readout, T_90, T_180, diffmode,
     cdef int N_out  
     cdef double *ddebug
 
-    N_eddy = len(eddy)//2
+    N_eddy = eddy.size//4
     if N_eddy > 0:
         eddy_params = np.ascontiguousarray(np.ravel(eddy), np.float64)
     else:
-        eddy_params = np.ascontiguousarray(np.ravel(np.zeros(2)), np.float64)
+        eddy_params = np.ascontiguousarray(np.ravel(np.zeros(4)), np.float64)
     cdef np.ndarray[np.float64_t, ndim=1, mode="c"] eddy_params_c = eddy_params
 
     _run_kernel_diff_fixeddt(&G_out, &N_out, &ddebug, verbose, dt, gmax, smax, TE, N_moments, &m_params_c[0], pns_thresh, T_readout, T_90, T_180, diffmode, dt_out, N_eddy, &eddy_params_c[0])

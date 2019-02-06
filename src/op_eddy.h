@@ -26,6 +26,7 @@ typedef struct {
     cvx_mat weights;
     cvx_mat checks;
     cvx_mat tolerances;
+    cvx_mat goals;
 
 
     cvx_mat sigE;
@@ -41,7 +42,7 @@ typedef struct {
 
 void cvxop_eddy_init(cvxop_eddy *opE, int N, int ind_inv, double dt,
                      double init_weight, int verbose);
-void cvxop_eddy_addrow(cvxop_eddy *opE, double lambda, double tol);
+void cvxop_eddy_addrow(cvxop_eddy *opE, double lambda, double goal, double tol, double offset);
 void cvxop_eddy_finishinit(cvxop_eddy *opE);
 
 void cvxop_eddy_add2tau(cvxop_eddy *opE, cvx_mat *tau_mat);

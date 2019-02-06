@@ -180,9 +180,17 @@ int cvxop_pns_check(cvxop_pns *opP, cvx_mat *G)
         }
     }
     
+    int bad_pns = 0;
+
+    if ((opP->active > 0) && (opP->thresh > 0)) {
+        if (max_pns > opP->thresh) {
+            bad_pns = 1;
+        }
+    }
+
     if (opP->verbose>0) {  
         printf("    Max PNS:     %f \n", max_pns);
     }
 
-    return 1;
+    return bad_pns;
 }

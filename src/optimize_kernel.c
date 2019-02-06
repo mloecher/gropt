@@ -11,7 +11,7 @@
 #include "op_gradient.h"
 #include "op_pns.h"
 
-#define EDDY_PARAMS_LEN 2
+#define EDDY_PARAMS_LEN 4
 #define MOMENTS_PARAMS_LEN 6
 
 void cvx_optimize_kernel(cvx_mat *G, cvxop_gradient *opG, cvxop_slewrate *opD, 
@@ -166,7 +166,7 @@ void cvx_optimize_kernel(cvx_mat *G, cvxop_gradient *opG, cvxop_slewrate *opD,
             int bad_moments = cvxop_moments_check(opQ, G);
             int bad_gradient = cvxop_gradient_check(opG, G);
             int bad_eddy = cvxop_eddy_check(opE, G);
-            cvxop_pns_check(opP, G);
+            int bad_pns = cvxop_pns_check(opP, G);
 
             int limit_break = 0;
             limit_break += bad_slew;
@@ -259,6 +259,16 @@ void cvx_optimize_kernel(cvx_mat *G, cvxop_gradient *opG, cvxop_slewrate *opD,
     int bad_slew = cvxop_slewrate_check(opD, G);
     int bad_moments = cvxop_moments_check(opQ, G);
     int bad_gradient = cvxop_gradient_check(opG, G);
+    int bad_eddy = cvxop_eddy_check(opE, G);
+    int bad_pns = cvxop_pns_check(opP, G);
+
+    int limit_break = 0;
+    limit_break += bad_slew;
+    limit_break += bad_moments;
+    limit_break += bad_gradient;
+    limit_break += bad_eddy;
+    limit_break += bad_pns;
+    ddebug[14] = limit_break;
 
     ddebug[7] = bad_slew;
     ddebug[8] = bad_moments;
@@ -408,7 +418,7 @@ void run_kernel_diff(double **G_out, int *N_out, double **ddebug, int verbose,
     cvxop_eddy opE;
     cvxop_eddy_init(&opE, N, ind_inv, dt, .01, verbose);
     for (int i = 0; i < N_eddy; i++) {
-        cvxop_eddy_addrow(&opE, (eddy_params[EDDY_PARAMS_LEN*i] * 1.0e-3), eddy_params[EDDY_PARAMS_LEN*i+1]);
+        cvxop_eddy_addrow(&opE, (eddy_params[EDDY_PARAMS_LEN*i] * 1.0e-3), eddy_params[EDDY_PARAMS_LEN*i+1], eddy_params[EDDY_PARAMS_LEN*i+2], eddy_params[EDDY_PARAMS_LEN*i+3]);
     }
     cvxop_eddy_finishinit(&opE);
     

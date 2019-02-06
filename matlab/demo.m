@@ -1,41 +1,38 @@
-%% Simple solver
-gmax = 0.04;
-smax = 50.0;
-MMT = 2;
-TE = 60.0;
-T_readout = 12.0;
-T_90 = 3.0;
-T_180 = 6.0;
-dt = 0.10e-3;
-diffmode = 2;
+%% Simple diffusion solver
+params.mode = 'diff_bval';
+params.gmax = 0.04;
+params.smax = 200.0;
+params.MMT = 0;
+params.TE = 60.0;
+params.T_readout = 12.0;
+params.T_90 = 3.0;
+params.T_180 = 6.0;
+params.dt = 500e-6;
 
-G = mex_gropt_diff_fixdt(gmax, smax, MMT, TE, T_readout, T_90, T_180, dt, diffmode);
+[G, lim_break] = gropt(params);
 
-plot_waveform(G, T_readout, dt)
-%% This will make the exact same waveform as the last one, but with fixed N
-gmax = 0.04;
-smax = 50.0;
-MMT = 2;
-TE = 60.0;
-T_readout = 12.0;
-T_90 = 3.0;
-T_180 = 6.0;
-N0 = 480;
-diffmode = 2;
+plot_waveform(G, params.T_readout, params.dt)
 
-G = mex_CVXG_fixN(gmax, smax, MMT, TE, T_readout, T_90, T_180, N0, diffmode);
 
-dt = (TE-T_readout) * 1.0e-3 / numel(G);
 
-plot_waveform(G, T_readout, dt)
-%% TE finder
-target_bval = 100;
-min_TE = 60.0; 
-max_TE = 100.0;
-dt = 0.40e-3;
+%% Bipolar generator
 
-G = get_min_TE( target_bval, min_TE, max_TE, gmax, smax, MMT, T_readout, T_90, T_180, dt, diffmode );
+params.mode = 'free';
+params.gmax = 0.04;
+params.smax = 200.0;
+% The structure of moment params entries is:
+% [axis dir, moment order, start time, end time, desired moment, tolerance]
+params.moment_params = [];
+params.moment_params(:,end+1) = [0, 0, -1, -1, 0, 1.0e-3];
+params.moment_params(:,end+1) = [0, 1, -1, -1, 11.74, 1.0e-3];
+params.TE = 1.34;
+params.dt = 40e-6;
 
-plot_waveform(G, T_readout, dt)
+[G, lim_break] = gropt(params);
 
-%%
+plot(G)
+
+%% TE finder for free mode
+% The only needed input parameter is the max search range
+[G_min, T_min] = get_min_TE_free(params, 5.0);
+plot(G_min)
