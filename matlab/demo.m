@@ -2,7 +2,7 @@
 params.mode = 'diff_bval';
 params.gmax = 0.04;
 params.smax = 200.0;
-params.MMT = 0;
+params.MMT = 1;
 params.TE = 60.0;
 params.T_readout = 12.0;
 params.T_90 = 3.0;
@@ -25,6 +25,7 @@ params.smax = 200.0;
 params.moment_params = [];
 params.moment_params(:,end+1) = [0, 0, -1, -1, 0, 1.0e-3];
 params.moment_params(:,end+1) = [0, 1, -1, -1, 11.74, 1.0e-3];
+params.moment_params(:,end+1) = [0, 2, -1, -1, 11.74, 1.0e-3];
 params.TE = 1.34;
 params.dt = 40e-6;
 

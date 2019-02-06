@@ -40,7 +40,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     dims = mxGetDimensions(prhs[11]);
     N_eddy = dims[1];
     
-    run_kernel_diff_fixedN(&G, &N, &ddebug, verbose, N0, gmax, smax, TE, N_moments, m_params, pns_thresh, 
+    run_kernel_diff_fixedN(&G, &N, &ddebug, verbose, N0, gmax, smax, TE, N_moments, moment_params, pns_thresh, 
             T_readout, T_90, T_180, diffmode, dt_out, N_eddy, eddy_params);
     
     plhs[0] = mxCreateDoubleMatrix(1,N,mxREAL);
