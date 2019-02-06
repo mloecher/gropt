@@ -13,7 +13,10 @@ params.dt = 500e-6;
 
 plot_waveform(G, params.T_readout, params.dt)
 
+%% Diffusion min_TE finder
+G_min = get_min_TE_diff(250, 30.0, 200.0, params);
 
+plot_waveform(G_min, params.T_readout, params.dt)
 
 %% Bipolar generator
 
@@ -23,11 +26,11 @@ params.smax = 200.0;
 % The structure of moment params entries is:
 % [axis dir, moment order, start time, end time, desired moment, tolerance]
 params.moment_params = [];
-params.moment_params(:,end+1) = [0, 0, -1, -1, 0, 1.0e-3];
-params.moment_params(:,end+1) = [0, 1, -1, -1, 11.74, 1.0e-3];
-params.moment_params(:,end+1) = [0, 2, -1, -1, 11.74, 1.0e-3];
+params.moment_params(:,end+1) = [0, 0, -1, -1, 11.74, 1.0e-3];
+% params.moment_params(:,end+1) = [0, 1, -1, -1, 11.74, 1.0e-3];
+% params.moment_params(:,end+1) = [0, 2, -1, -1, 0, 1.0e-3];
 params.TE = 1.34;
-params.dt = 40e-6;
+params.dt = 10e-6;
 
 [G, lim_break] = gropt(params);
 
