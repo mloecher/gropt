@@ -57,7 +57,7 @@ end
 %     res = Gc;
 % end
 
-if (yc < yd)
+if (yc > yd)
     res = Gc;
 else
     res = Gd;
