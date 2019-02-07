@@ -8,7 +8,7 @@ N_ss = round(1.375/(g_ss*dt)*1e-6);
 G_ss = ones(1, N_ss) .* g_ss;
 t_ss = numel(G_ss) * dt;
 
-tvec = (0:numel(G_ss)-1)*dt*1e3; % in sec
+tvec = (0:numel(G_ss)-1)*dt*1e3; % in msec
 % tMat for all moments
 tMat = zeros( Nm, numel(G_ss) );
 for mm=1:Nm,
