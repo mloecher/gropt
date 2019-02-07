@@ -19,6 +19,9 @@ moments_ss = (1e3*1e3*dt*tMat*(G_ss'));
 M0ss = moments_ss(1);
 M1ss = moments_ss(2);
 %% Compute flow comped refocuser
+% note that t_ss has been added to the third spot in moment params
+% this tells the optimizer that the first point in the waveform is actually
+% at t = t_tss instead of 0
 params = struct;
 params.mode = 'free';
 params.gmax = 0.05;
