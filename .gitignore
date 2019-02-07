@@ -1,6 +1,7 @@
 *.mexw64
 *.asv
 python/testing/
+.vscode/
 
 #################
 ## Defaults from github python
