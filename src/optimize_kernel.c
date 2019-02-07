@@ -12,7 +12,7 @@
 #include "op_pns.h"
 
 #define EDDY_PARAMS_LEN 4
-#define MOMENTS_PARAMS_LEN 6
+#define MOMENTS_PARAMS_LEN 7
 
 void cvx_optimize_kernel(cvx_mat *G, cvxop_gradient *opG, cvxop_slewrate *opD, 
                         cvxop_moments *opQ, cvxop_eddy *opE, cvxop_beta *opC, 
@@ -409,8 +409,11 @@ void run_kernel_diff(double **G_out, int *N_out, double **ddebug, int verbose,
     cvxop_moments_init(&opQ, N, ind_inv, dt, moments_weight, verbose);
     for (int i = 0; i < N_moments; i++) {
         cvxop_moments_addrow(&opQ, moments_params[MOMENTS_PARAMS_LEN*i+1], 
-                                   moments_params[MOMENTS_PARAMS_LEN*i+4], 
-                                   moments_params[MOMENTS_PARAMS_LEN*i+5]);
+                                   moments_params[MOMENTS_PARAMS_LEN*i+5], 
+                                   moments_params[MOMENTS_PARAMS_LEN*i+6],
+                                   moments_params[MOMENTS_PARAMS_LEN*i+2],
+                                   moments_params[MOMENTS_PARAMS_LEN*i+3],
+                                   moments_params[MOMENTS_PARAMS_LEN*i+4]);
     }
     cvxop_moments_finishinit(&opQ);
     

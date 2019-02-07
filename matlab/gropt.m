@@ -1,4 +1,4 @@
-function [ G, lim_break ] = gropt( params )
+function [ G, lim_break, params ] = gropt( params )
 %GROPT_HELPER Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -57,12 +57,12 @@ function [ G, lim_break ] = gropt( params )
             return
         end
         moment_params = [];
-        moment_params(:,end+1) = [0, 0, -1, -1, 0, 1.0e-3];
+        moment_params(:,end+1) = [0, 0, 0, -1, -1, 0, 1.0e-3];
         if MMT > 0
-            moment_params(:,end+1) = [0, 1, -1, -1, 0, 1.0e-3];
+            moment_params(:,end+1) = [0, 1, 0, -1, -1, 0, 1.0e-3];
         end
         if MMT > 1
-            moment_params(:,end+1) = [0, 2, -1, -1, 0, 1.0e-3];
+            moment_params(:,end+1) = [0, 2, 0, -1, -1, 0, 1.0e-3];
         end
     elseif strcmp(mode, 'free')
         T_readout = 0.0;
@@ -79,15 +79,16 @@ function [ G, lim_break ] = gropt( params )
         return
     end
     
-    if isfield(params, 'dt')
-        dt = params.dt;
-        if isfield(params, 'N0')
-            fprintf('WARNING: dt and N0 entered, ignoring N0.\n');
-        end
-        N0 = -1;
-    elseif isfield(params, 'N0')
+    if isfield(params, 'N0')
         N0 = params.N0;
-        dt = -1.0;
+        if isfield(params, 'dt')
+%             fprintf('WARNING: dt and N0 entered, ignoring dt.\n');
+        end
+        dt = (TE-T_readout) * 1.0e-3 / N0;
+        params.dt = dt;
+    elseif isfield(params, 'dt')
+        dt = params.dt;
+        N0 = -1.0;
     else
         fprintf('ERROR: need params.dt or params.N0.\n');
         return
@@ -121,11 +122,12 @@ function [ G, lim_break ] = gropt( params )
     end
     
     
-    if dt > 0
-        [G, lim_break] = mex_gropt_diff_fixdt(gmax, smax, moment_params, TE, T_readout, T_90, T_180, dt, diffmode, ...
-        dt_out, pns_thresh, eddy_params);
-    elseif N0 > 0
+    
+    if N0 > 0
         [G, lim_break] = mex_gropt_diff_fixN(gmax, smax, moment_params, TE, T_readout, T_90, T_180, N0, diffmode, ...
+        dt_out, pns_thresh, eddy_params);
+    elseif dt > 0
+        [G, lim_break] = mex_gropt_diff_fixdt(gmax, smax, moment_params, TE, T_readout, T_90, T_180, dt, diffmode, ...
         dt_out, pns_thresh, eddy_params);
     end
 

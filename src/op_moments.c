@@ -38,11 +38,11 @@ void cvxop_moments_init(cvxop_moments *opQ, int N, int ind_inv, double dt,
  * Add a moment constraint
  * The *1000 x 3 are to get into units of mT/m*ms^X
  */
-void cvxop_moments_addrow(cvxop_moments *opQ, int order, double goal, double tol)
+void cvxop_moments_addrow(cvxop_moments *opQ, int order, double goal, double tol, double ref0, double start, double stop)
 {
     for (int i = 0; i < opQ->N; i++) {
         double ii = i;
-        double val = 1000.0 * 1000.0 * opQ->dt * pow( (1000.0 * opQ->dt*ii), (double)order );
+        double val = 1000.0 * 1000.0 * opQ->dt * pow( (1000.0 * (opQ->dt*ii + ref0)), (double)order );
         if (i > opQ->ind_inv) {val = -val;}
         cvxmat_set(&(opQ->Q0), opQ->Nrows, i, val);
     }

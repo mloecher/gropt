@@ -10,7 +10,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     double *ddebug;
     const mwSize *dims;
     
-        int verbose = 0;
+    int verbose = 0;
     
     double gmax = mxGetScalar(prhs[0]);
     double smax = mxGetScalar(prhs[1]);
@@ -50,6 +50,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     for (int i = 0; i < N; i++) {
         temp[i] = G[i];
     }
+    
+    plhs[1] = mxCreateDoubleScalar(ddebug[14]);
         
 
 }

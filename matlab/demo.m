@@ -24,12 +24,12 @@ params.mode = 'free';
 params.gmax = 0.04;
 params.smax = 200.0;
 % The structure of moment params entries is:
-% [axis dir, moment order, start time, end time, desired moment, tolerance]
+% [axis dir, moment order, 0 reference time, 
+%        start time, end time, desired moment, tolerance]
 params.moment_params = [];
-params.moment_params(:,end+1) = [0, 0, -1, -1, 11.74, 1.0e-3];
-% params.moment_params(:,end+1) = [0, 1, -1, -1, 11.74, 1.0e-3];
-% params.moment_params(:,end+1) = [0, 2, -1, -1, 0, 1.0e-3];
-params.TE = 1.34;
+params.moment_params(:,end+1) = [0, 0, 0, -1, -1, 0, 1.0e-3];
+params.moment_params(:,end+1) = [0, 1, 0, -1, -1, 11.74, 1.0e-3];
+params.TE = 1.32;
 params.dt = 10e-6;
 
 [G, lim_break] = gropt(params);
@@ -38,5 +38,6 @@ plot(G)
 
 %% TE finder for free mode
 % The only needed input parameter is the max search range
-[G_min, T_min] = get_min_TE_free(params, 5.0);
+
+[G_min, T_min] = get_min_TE_free(params, 3.0);
 plot(G_min)

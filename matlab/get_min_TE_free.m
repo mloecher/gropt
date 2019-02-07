@@ -7,10 +7,17 @@ T_range = T_hi-T_lo;
 
 best_time = 999999.9;
 
-while ((T_range*1e-3) > (params.dt/4.0))
+if isfield(params, 'dt')
+    dt = params.dt;
+else
+    dt = 1.0e-3/params.N0;
+end
+
+fprintf('Testing TE =');
+while ((T_range*1e-3) > (dt/4.0))
     params.TE = T_lo + (T_range)/2.0;
-    fprintf('Testing TE = %d\n', params.TE);
-    [G, lim_break] = gropt(params);
+    fprintf(' %.3f', params.TE);
+    [G, lim_break, params] = gropt(params);
     if lim_break == 0
         T_hi = params.TE;
         if T_hi < best_time
@@ -23,6 +30,8 @@ while ((T_range*1e-3) > (params.dt/4.0))
     end
     T_range = T_hi-T_lo;
 end
+
+fprintf(' Final TE = %.3f ms\n', T_out);
 
 end
 

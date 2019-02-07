@@ -43,7 +43,7 @@ typedef struct {
 
 void cvxop_moments_init(cvxop_moments *opQ, int N, int ind_inv, double dt,
                      double init_weight, int verbose);
-void cvxop_moments_addrow(cvxop_moments *opQ, int order, double goal, double tol);
+void cvxop_moments_addrow(cvxop_moments *opQ, int order, double goal, double tol, double ref0, double start, double stop);
 void cvxop_moments_finishinit(cvxop_moments *opE);
 
 void cvxop_moments_add2tau(cvxop_moments *opQ, cvx_mat *tau_mat);

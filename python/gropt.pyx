@@ -21,6 +21,67 @@ cdef extern from "../src/optimize_kernel.c":
                                                                 double T_readout, double T_90, double T_180, int diffmode,  double dt_out,
                                                                 int N_eddy, double *eddy_params)
 
+def gropt(params):
+    
+    if 'mode' in params:
+        mode = params['mode']
+    else:
+        print('ERROR: params does not contain key "mode"')
+        return
+
+    if mode == 'diff_bval':
+        diffmode = 2
+    elif mode == 'diff_beta':
+        diffmode = 1
+    elif mode == 'free':
+        diffmode = 0
+    else
+        print('ERROR: mode = %s is not valid' % mode)
+        return
+
+    if 'gmax' in params:
+        gmax = params['gmax']
+    else:
+        print('ERROR: params does not contain key "gmax"')
+        return
+
+    if 'smax' in params:
+        smax = params['smax']
+    else:
+        print('ERROR: params does not contain key "smax"')
+        return
+
+    if 'TE' in params:
+        TE = params['TE']
+    else:
+        print('ERROR: params does not contain key "TE"')
+        return
+
+    if diffmode > 0:
+        if 'T_90' in params:
+            T_90 = params['T_90']
+        else:
+            print('ERROR: params does not contain key "T_90"')
+            return
+        
+        if 'T_180' in params:
+            T_180 = params['T_180']
+        else:
+            print('ERROR: params does not contain key "T_180"')
+            return
+
+        if 'T_readout' in params:
+            T_readout = params['T_readout']
+        else:
+            print('ERROR: params does not contain key "T_readout"')
+            return
+
+        if 'MMT' in params:
+            MMT = params['MMT']
+        else:
+            print('ERROR: params does not contain key "MMT"')
+            return
+
 def run_diffkernel_fixN(gmax, smax, MMT, TE, T_readout, T_90, T_180, diffmode, N0 = 64, dt_out = -1.0, 
                         eddy = [], pns_thresh = -1.0, verbose = 1):
 
