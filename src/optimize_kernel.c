@@ -10,13 +10,14 @@
 #include "op_bval.h"
 #include "op_gradient.h"
 #include "op_pns.h"
+#include "op_maxwell.h"
 
 #define EDDY_PARAMS_LEN 4
 #define MOMENTS_PARAMS_LEN 7
 
 void cvx_optimize_kernel(cvx_mat *G, cvxop_gradient *opG, cvxop_slewrate *opD, 
                         cvxop_moments *opQ, cvxop_eddy *opE, cvxop_beta *opC, 
-                        cvxop_bval *opB, cvxop_pns *opP,
+                        cvxop_bval *opB, cvxop_pns *opP, cvxop_maxwell *opX,
                          int N, double relax, int verbose, double bval_reduction, double *ddebug, int N_converge, double stop_increase)
 {    
     int max_iter = 30000;
@@ -66,6 +67,7 @@ void cvx_optimize_kernel(cvx_mat *G, cvxop_gradient *opG, cvxop_slewrate *opD,
     cvxop_bval_add2tau(opB, &tau);
     cvxop_beta_add2tau(opC, &tau);
     cvxop_pns_add2tau(opP, &tau);
+    cvxop_maxwell_add2tau(opX, &tau);
     cvxmat_EWinvert(&tau);
 
     double obj0 = 1.0;
@@ -83,6 +85,7 @@ void cvx_optimize_kernel(cvx_mat *G, cvxop_gradient *opG, cvxop_slewrate *opD,
         cvxop_beta_add2taumx(opC, &taumx);
         cvxop_bval_add2taumx(opB, &taumx);
         cvxop_pns_add2taumx(opP, &taumx);
+        cvxop_maxwell_add2taumx(opX, &taumx);
 
         cvxmat_EWmultIP(&taumx, &tau);
 
@@ -94,6 +97,9 @@ void cvx_optimize_kernel(cvx_mat *G, cvxop_gradient *opG, cvxop_slewrate *opD,
 
         // txmx = 2*xbar-G;
         cvxmat_subractMatMult1(&txmx, 2.0, &xbar, G);
+        // for (int i = 0; i < N; i++) {
+        //     opX->x_store.vals[i] = xbar.vals[i];
+        // }
 
 
         // zDbuff  = zD + sigD.*(D*txmx);
@@ -109,6 +115,7 @@ void cvx_optimize_kernel(cvx_mat *G, cvxop_gradient *opG, cvxop_slewrate *opD,
         cvxop_eddy_update(opE, &txmx, relax);
         cvxop_bval_update(opB, &txmx, relax, ddebug, count);
         cvxop_pns_update(opP, &txmx, relax);
+        cvxop_maxwell_update(opX, &txmx, relax);
 
         // G=p*xbar+(1-p)*G;
         cvxmat_updateG(G, relax, &xbar);
@@ -167,6 +174,7 @@ void cvx_optimize_kernel(cvx_mat *G, cvxop_gradient *opG, cvxop_slewrate *opD,
             int bad_gradient = cvxop_gradient_check(opG, G);
             int bad_eddy = cvxop_eddy_check(opE, G);
             int bad_pns = cvxop_pns_check(opP, G);
+            int bad_maxwell = cvxop_maxwell_check(opX, G);
 
             int limit_break = 0;
             limit_break += bad_slew;
@@ -261,6 +269,7 @@ void cvx_optimize_kernel(cvx_mat *G, cvxop_gradient *opG, cvxop_slewrate *opD,
     int bad_gradient = cvxop_gradient_check(opG, G);
     int bad_eddy = cvxop_eddy_check(opE, G);
     int bad_pns = cvxop_pns_check(opP, G);
+    int bad_maxwell = cvxop_maxwell_check(opX, G);
 
     int limit_break = 0;
     limit_break += bad_slew;
@@ -405,6 +414,10 @@ void run_kernel_diff(double **G_out, int *N_out, double **ddebug, int verbose,
     cvxop_pns opP;
     cvxop_pns_init(&opP, N, dt, ind_inv, PNS_thresh, verbose);
 
+    cvxop_maxwell opX;
+    cvxop_maxwell_init(&opX, N, dt, ind_inv, .01, verbose);
+    opX.active = 0;
+
     cvxop_moments opQ;
     cvxop_moments_init(&opQ, N, ind_inv, dt, moments_weight, verbose);
     for (int i = 0; i < N_moments; i++) {
@@ -442,7 +455,7 @@ void run_kernel_diff(double **G_out, int *N_out, double **ddebug, int verbose,
         (*ddebug)[i] = 0.0;
     }
 
-    cvx_optimize_kernel(&G, &opG, &opD, &opQ, &opE, &opC, &opB, &opP, N, relax, verbose, bval_reduce, *ddebug, N_converge, stop_increase);
+    cvx_optimize_kernel(&G, &opG, &opD, &opQ, &opE, &opC, &opB, &opP, &opX, N, relax, verbose, bval_reduce, *ddebug, N_converge, stop_increase);
 
     cvxop_gradient_limiter(&opG, &G);
     

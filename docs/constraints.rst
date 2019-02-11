@@ -24,9 +24,9 @@ This constraint constrains :math:`\dfrac{dG}{dt}` so that all values must be in 
 Moments
 ------------------
 
-Moments are controlled with an array of doubles of length Ncx7, where Nc is the number of moment constraints to be applied.  Any number of constraints (Nc) can be added in this array.
+Moments are controlled with an array of doubles of length N_momentsx7, where N_moments is the number of moment constraints to be applied.   Any number of constraints (N_moments) can be added in this array.
 
-The 7 options in a constraints are (sequentially):
+The 7 options in a constraint are (sequentially):
 
 - Axis of constraint
     0, 1, or 2 based on which axis to apply the constraint on, when more than one axis of gradients are being computed.

@@ -1,6 +1,7 @@
 import numpy as np
 cimport numpy as np
 import time
+cimport cython
 
 cdef extern from "../src/optimize_kernel.c":
     void _run_kernel_diff_fixeddt "run_kernel_diff_fixeddt"(double **G_out, int *N_out, double **ddebug, int verbose, 
@@ -21,8 +22,37 @@ cdef extern from "../src/optimize_kernel.c":
                                                                 double T_readout, double T_90, double T_180, int diffmode,  double dt_out,
                                                                 int N_eddy, double *eddy_params)
 
-def gropt(params):
+
+def array_prep(A, dtype, linear=True):
+    if not A.flags['C_CONTIGUOUS']:
+        A = np.ascontiguousarray(A)
     
+    A = A.astype(dtype, order='C', copy=False)
+    
+    if linear:
+        A = A.ravel()
+
+    return A
+
+
+def test_memviews():
+    A = np.arange(9, dtype=np.intc).reshape((3,3))
+
+    cdef int[::1] A_view = array_prep(A, np.intc)
+    cdef int i
+
+    for i in range(9):
+        print(A_view[i])
+
+@cython.boundscheck(False) 
+@cython.wraparound(False)
+def gropt(params, verbose=0):
+    
+    #--------------
+    # Read params with bunches of error checks
+    # This is probably excessive vs. just trying to open these fields, but whatevs
+    #--------------
+
     if 'mode' in params:
         mode = params['mode']
     else:
@@ -35,7 +65,7 @@ def gropt(params):
         diffmode = 1
     elif mode == 'free':
         diffmode = 0
-    else
+    else:
         print('ERROR: mode = %s is not valid' % mode)
         return
 
@@ -81,6 +111,88 @@ def gropt(params):
         else:
             print('ERROR: params does not contain key "MMT"')
             return
+        moment_params = [[0, 0, 0, -1, -1, 0, 1.0e-3]]
+        if MMT > 0:
+            moment_params.append([0, 1, 0, -1, -1, 0, 1.0e-3])
+        if MMT > 1:
+            moment_params.append([0, 2, 0, -1, -1, 0, 1.0e-3])
+    elif diffmode == 0:
+        T_readout = 0.0
+        T_90 = 0.0
+        T_180 = 0.0
+        if 'moment_params' in params:
+            moment_params = params['moment_params']
+        else:
+            print('ERROR: params does not contain key "moment_params"')
+            return
+    else:
+        print('ERROR: something went wrong in diffmode setup')
+        return
+
+    if 'N0' in params:
+        N0 = params['N0']
+        dt = (TE-T_readout) * 1.0e-3 / N0
+    elif 'dt' in params:
+        dt = params['dt']
+        N0 = -1
+    else:
+        print('ERROR: params does not contain key "dt" or "N0" (need 1)')
+        return
+
+    if 'dt_out' in params:
+        dt_out = params['dt_out']
+    else:
+        dt_out = -1
+
+    if 'eddy_params' in params:
+        eddy_params = params['eddy_params']
+    else:
+        eddy_params = np.array([])
+
+    if 'pns_thresh' in params:
+        pns_thresh = params['pns_thresh']
+    else:
+        pns_thresh = -1.0
+
+    #--------------
+    # Done reading params, now run the C routines
+    #--------------
+
+    moment_params = np.array(moment_params)
+    eddy_params = np.array(eddy_params)
+    
+
+    cdef int N_moments = moment_params.shape[0]
+    if N_moments == 0: # Needed only if bounds-checking is on for some reason
+        moment_params = np.array([0.0])
+    cdef double[::1] moment_params_view = array_prep(moment_params, np.float64)
+
+    cdef int N_eddy = eddy_params.shape[0]
+    if N_eddy == 0: # Needed only if bounds-checking is on for some reason
+        eddy_params = np.array([0.0])
+    cdef double[::1] eddy_params_view = array_prep(eddy_params, np.float64)
+
+    cdef double *G_out
+    cdef int N_out  
+    cdef double *ddebug
+
+    if N0 > 0:
+        _run_kernel_diff_fixedN(&G_out, &N_out, &ddebug, verbose, N0, gmax, smax, TE, N_moments, &moment_params_view[0], 
+                                pns_thresh, T_readout, T_90, T_180, diffmode, dt_out, N_eddy, &eddy_params_view[0])
+    elif dt > 0:
+        _run_kernel_diff_fixeddt(&G_out, &N_out, &ddebug, verbose, dt, gmax, smax, TE, N_moments, &moment_params_view[0], 
+                                 pns_thresh, T_readout, T_90, T_180, diffmode, dt_out, N_eddy, &eddy_params_view[0])
+
+    G_return = np.empty(N_out)
+    for i in range(N_out):
+        G_return[i] = G_out[i]
+
+    debug_out = np.empty(480000)
+    for i in range(480000):
+        debug_out[i] = ddebug[i]
+
+    return G_return, debug_out
+
 
 def run_diffkernel_fixN(gmax, smax, MMT, TE, T_readout, T_90, T_180, diffmode, N0 = 64, dt_out = -1.0, 
                         eddy = [], pns_thresh = -1.0, verbose = 1):

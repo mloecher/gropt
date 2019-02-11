@@ -15,7 +15,7 @@ except ImportError:
 from Cython.Build import cythonize
 import numpy
 
-sourcefiles = ['gropt.pyx', '../src/cvx_matrix.c', '../src/op_gradient.c', '../src/op_bval.c', '../src/op_beta.c', '../src/op_eddy.c', '../src/op_slewrate.c', '../src/op_moments.c', '../src/op_pns.c']
+sourcefiles = ['gropt.pyx', '../src/cvx_matrix.c', '../src/op_gradient.c', '../src/op_maxwell.c', '../src/op_bval.c', '../src/op_beta.c', '../src/op_eddy.c', '../src/op_slewrate.c', '../src/op_moments.c', '../src/op_pns.c']
 
 if _platform == "darwin":
     extensions = [Extension("gropt",
