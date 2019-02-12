@@ -32,33 +32,26 @@ def compare_waveforms(G0, G1):
     if (rel_err > 1e-3):
         print('ERROR: output waveforms are different')
 
+def run_test_diff_v1(data):
+    params = data['params_in']
+    if params['diffmode'] == 1:
+        params['mode'] = 'diff_beta'
+    elif params['diffmode'] == 2:
+        params['mode'] = 'diff_bval' 
+    
+    if 'N' in params:
+        if params['N'] > 0:
+            params['N0'] = params['N']
+
+    G, limit_break = gropt.gropt(params)
+
+    compare_waveforms(data['G'], G)
 
 def run_testcase(casefile):
 
     data = hdf5storage.read(filename=casefile)
-    dt = data['params_in']['dt']
-    N = data['params_in']['N']
-    gmax = data['params_in']['gmax']
-    smax = data['params_in']['smax']
-    MMT = data['params_in']['MMT']
-    TE = data['params_in']['TE']
-    T_readout = data['params_in']['T_readout']
-    T_90 = data['params_in']['T_90']
-    T_180 = data['params_in']['T_180']
-    diffmode = data['params_in']['diffmode']
-
-    if (dt < 0) and (N < 0):
-        print('ERROR: dt or N needs to be set for test case')
-    elif (dt > 0):
-        start = timer()
-        G, dd = gropt.run_diffkernel_fixdt(gmax, smax, MMT, TE, T_readout, T_90, T_180, diffmode, dt=dt, verbose=0)
-        end = timer()
-    elif (N > 0):
-        start = timer()
-        G, dd = gropt.run_diffkernel_fixN(gmax, smax, MMT, TE, T_readout, T_90, T_180, diffmode, N0=N, verbose=0)
-        end = timer()
-
-    compare_waveforms(data['G'], G)
+    if data['version'] == 'diff_v1':
+        run_test_diff_v1(data)
 
 
 import os

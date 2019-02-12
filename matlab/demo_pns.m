@@ -11,7 +11,7 @@ params.T_180 = 6.0;
 params.dt = 200e-6;
 
 G_min = get_min_TE_diff(100, 40.0, 80.0, params);
-plot_waveform(G_min, params.T_readout, params.dt, 1, 1, 1)
+plot_waveform(G_min, params, 1, 1, 1)
 
 %% Now with PNS = 1
 % Note this is significantly slower because a convolution needs to be done
@@ -27,7 +27,7 @@ params.dt = 200e-6;
 params.pns_thresh = 1.0;
 
 G_min = get_min_TE_diff(100, 40.0, 80.0, params);
-plot_waveform(G_min, params.T_readout, params.dt, 1, 1, 1)
+plot_waveform(G_min, params, 1, 1, 1)
 
 
 %% Now just slew derated
@@ -44,4 +44,4 @@ params.T_180 = 6.0;
 params.dt = 200e-6;
 
 G_min = get_min_TE_diff(100, 40.0, 80.0, params);
-plot_waveform(G_min, params.T_readout, params.dt, 1, 1, 1)
+plot_waveform(G_min, params, 1, 1, 1)

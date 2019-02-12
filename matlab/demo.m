@@ -11,12 +11,12 @@ params.dt = 500e-6;
 
 [G, lim_break] = gropt(params);
 
-plot_waveform(G, params.T_readout, params.dt)
+plot_waveform(G, params)
 
 %% Diffusion min_TE finder
 G_min = get_min_TE_diff(250, 30.0, 200.0, params);
 
-plot_waveform(G_min, params.T_readout, params.dt)
+plot_waveform(G_min, params)
 
 %% Bipolar generator
 

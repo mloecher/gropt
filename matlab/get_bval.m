@@ -1,6 +1,15 @@
-function bval = get_bval(G, T_READOUT, dt)
+function bval = get_bval(G, params)
 %GET_BVAL Summary of this function goes here
 %   Detailed explanation goes here
+
+    if isfield(params, 'dt_out')
+        dt = params.dt_out;
+    else
+        dt = params.dt;
+    end
+    
+    T_READOUT = params.T_readout;
+    
     TE = numel(G)*dt*1e3+T_READOUT;
 
     tINV = floor(TE/dt/1e3/2);

@@ -1,4 +1,4 @@
-function plot_waveform( G, T_readout, dt, plot_moments, plot_slew, plot_pns)
+function plot_waveform( G, params, plot_moments, plot_slew, plot_pns)
 %PLOT_WAVEFORM Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -12,6 +12,19 @@ if nargin < 6
     plot_pns = 0;
 end
 
+if isfield(params, 'dt_out')
+    dt = params.dt_out;
+else
+    dt = params.dt;
+end
+
+if isfield(params, 'T_readout')
+    T_readout = params.T_readout;
+else
+    T_readout = 0.0;
+end
+
+
 n_plots = 1;
 n_plots = n_plots + plot_moments;
 n_plots = n_plots + plot_slew;
@@ -19,7 +32,7 @@ n_plots = n_plots + plot_pns;
 
 figure();
 
-bval = get_bval(G, T_readout, dt);
+bval = get_bval(G, params);
 TE2 = numel(G)*dt*1e3+T_readout;
 
 

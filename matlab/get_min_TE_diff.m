@@ -2,6 +2,12 @@ function res = get_min_TE_diff( target_bval, min_TE, max_TE, params )
 %GET_MIN_TE Summary of this function goes here
 %   Detailed explanation goes here
 
+if isfield(params, 'dt_out')
+    dt = params.dt_out;
+else
+    dt = params.dt;
+end
+
 a = min_TE;
 b = max_TE;
 h = b - a;
@@ -19,11 +25,11 @@ d = a + invphi * h;
 
 params.TE = c;
 Gc = gropt(params);
-yc = abs(get_bval(Gc, params.T_readout, params.dt) - target_bval);
+yc = abs(get_bval(Gc, params) - target_bval);
 
 params.TE = d;
 Gd = gropt(params);
-yd = abs(get_bval(Gd, params.T_readout, params.dt) - target_bval);
+yd = abs(get_bval(Gd, params) - target_bval);
 
 fprintf('Finding TE (%d iterations): ', n);
 for k = 1:n
@@ -36,7 +42,7 @@ for k = 1:n
         c = a + invphi2 * h;
         params.TE = c;
         Gc = gropt(params);
-        yc = abs(get_bval(Gc, params.T_readout, params.dt) - target_bval);
+        yc = abs(get_bval(Gc, params) - target_bval);
     else
         a = c;
         c = d;
@@ -45,7 +51,7 @@ for k = 1:n
         d = a + invphi * h;
         params.TE = d;
         Gd = gropt(params);
-        yd = abs(get_bval(Gd, params.T_readout, params.dt) - target_bval);
+        yd = abs(get_bval(Gd, params) - target_bval);
     end
 end
 
@@ -63,14 +69,14 @@ else
     res = Gd;
 end
 
-bval_out = get_bval(res, params.T_readout, params.dt);
-TE_end = numel(res)*params.dt*1e3+params.T_readout;
-if ( get_bval(res, params.T_readout, params.dt) < 0.90 * target_bval )
+bval_out = get_bval(res, params);
+TE_end = numel(res)*dt*1e3+params.T_readout;
+if ( get_bval(res, params) < 0.90 * target_bval )
     fprintf(' TE = %f  bval = %f not big enough, restarting search\n', TE_end, bval_out );
     res = get_min_TE_diff( target_bval, 0.9*TE_end, 2*TE_end, params);
 end
 
-fprintf(' Done  TE = %f\n', numel(res)*params.dt*1e3+params.T_readout);
+fprintf(' Done  TE = %f\n', numel(res)*dt*1e3+params.T_readout);
 
 end
 
