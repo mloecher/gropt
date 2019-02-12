@@ -120,6 +120,9 @@ def gropt(params, verbose=0):
         T_readout = 0.0
         T_90 = 0.0
         T_180 = 0.0
+        params['T_readout'] = 0.0
+        params['T_90'] = 0.0
+        params['T_180'] = 0.0
         if 'moment_params' in params:
             moment_params = params['moment_params']
         else:
@@ -191,7 +194,7 @@ def gropt(params, verbose=0):
     for i in range(480000):
         debug_out[i] = ddebug[i]
 
-    return G_return, debug_out
+    return G_return, debug_out[14]
 
 
 def run_diffkernel_fixN(gmax, smax, MMT, TE, T_readout, T_90, T_180, diffmode, N0 = 64, dt_out = -1.0, 

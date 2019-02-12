@@ -2,6 +2,96 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from math import ceil
+import gropt
+
+def get_min_TE(params, bval = 1000, min_TE = -1, max_TE = -1):
+    if params['mode'][:4] == 'diff':
+        if min_TE < 0:
+            min_TE = params['T_readout'] + params['T_90'] + params['T_180'] + 10
+        
+        if max_TE < 0:
+            max_TE = 200
+
+        G_out, T_out = get_min_TE_diff(params, bval, min_TE, max_TE)
+
+    elif params['mode'] == 'free':
+        if min_TE < 0:
+            min_TE = 0.1
+        
+        if max_TE < 0:
+            max_TE = 5.0
+
+        G_out, T_out = get_min_TE_free(params, min_TE, max_TE)
+    
+    return G_out, T_out
+
+
+def get_min_TE_diff(params, target_bval, min_TE, max_TE):
+    
+    T_lo = min_TE
+    T_hi = max_TE
+    T_range = T_hi-T_lo
+
+    best_time = 999999.9
+
+    if 'dt' in params:
+        dt = params['dt']
+    else:
+        dt = 1.0e-3/params['N0']
+
+    print('Testing TE =', end='', flush=True)
+    while ((T_range*1e-3) > (dt/4.0)): 
+        params['TE'] = T_lo + (T_range)/2.0
+        print(' %.3f' % params['TE'], end='', flush=True)
+        G, lim_break = gropt.gropt(params)
+        bval = get_bval(G, params)
+        if bval > target_bval:
+            T_hi = params['TE']
+            if T_hi < best_time:
+                G_out = G
+                T_out = T_hi
+                best_time = T_hi
+        else:
+            T_lo = params['TE']
+        T_range = T_hi-T_lo
+
+    print(' Final TE = %.3f ms' % T_out)
+
+    return G_out, T_out
+
+def get_min_TE_free(params, min_TE, max_TE):
+    
+    T_lo = min_TE
+    T_hi = max_TE
+    T_range = T_hi-T_lo
+
+    best_time = 999999.9
+
+    if 'dt' in params:
+        dt = params['dt']
+    else:
+        dt = 1.0e-3/params['N0']
+
+    print('Testing TE =', end='', flush=True)
+    while ((T_range*1e-3) > (dt/4.0)): 
+        params['TE'] = T_lo + (T_range)/2.0
+        print(' %.3f' % params['TE'], end='', flush=True)
+        G, lim_break = gropt.gropt(params)
+        if lim_break == 0:
+            T_hi = params['TE']
+            if T_hi < best_time:
+                G_out = G
+                T_out = T_hi
+                best_time = T_hi
+        else:
+            T_lo = params['TE']
+        T_range = T_hi-T_lo
+
+    print(' Final TE = %.3f ms' % T_out)
+
+    return G_out, T_out
+
+
 
 def get_stim(G, dt):
     alpha = 0.333
@@ -40,8 +130,14 @@ def get_moments(G, T_readout, dt):
     moments = np.abs(GAMMA*dt*tMat@(G*INV))
     return moments
 
-def get_bval(G, T_readout, dt):
-    TE = G.size*dt*1e3 + T_readout
+def get_bval(G, params):
+
+    if params['dt'] < 0:
+        dt = (params['TE']-params['T_readout']) * 1.0e-3 / G.size
+    else:
+        dt = params['dt']
+    
+    TE = G.size*dt*1.0e3 + params['T_readout']
     tINV = int(np.floor(TE/dt/1.0e3/2.0))
     GAMMA   = 42.58e3; 
     
@@ -111,11 +207,17 @@ def get_moment_plots(G, T_readout, dt, diffmode = 1):
 
     return out
 
-def plot_waveform(G, TE, T_readout, diffmode = 1, plot_moments = True, plot_eddy = True, plot_pns = True, plot_slew = True,
+def plot_waveform(G, params, plot_moments = True, plot_eddy = True, plot_pns = True, plot_slew = True,
                   suptitle = '', eddy_lines=[], eddy_range = [1e-3,120,1000]):
     sns.set()
     sns.set_context("talk")
     
+    TE = params['TE']
+    T_readout = params['T_readout']
+    diffmode = 0
+    if params['mode'][:4] == 'diff':
+        diffmode = 1
+
     dt = (TE-T_readout) * 1.0e-3 / G.size
     tt = np.arange(G.size) * dt * 1e3
     tINV = TE/2.0
@@ -138,7 +240,7 @@ def plot_waveform(G, TE, T_readout, diffmode = 1, plot_moments = True, plot_eddy
     i_row = 0
     i_col = 0
 
-    bval = get_bval(G, T_readout, dt)
+    bval = get_bval(G, params)
     blabel = '    bval = %.0f' % bval
     if suptitle:
         f.suptitle(suptitle + blabel)
