@@ -13,5 +13,6 @@ The main workhorse of the package are the optimization routines written in C, wh
 
     install
     constraints
+    usage/index
     citations
     
