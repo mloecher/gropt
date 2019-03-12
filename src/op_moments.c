@@ -102,11 +102,16 @@ void cvxop_moments_reweight(cvxop_moments *opQ, double weight_mod)
     for (int j = 0; j < opQ->Nrows; j++) {
         ww = 1.0;
         if (opQ->checks.vals[j] > 0) {
-            ww = 2.0 * opQ->checks.vals[j];
+            ww = 4.0 * opQ->checks.vals[j];
             if (ww > weight_mod) {
                 ww = weight_mod;
             }
         }
+
+        if (opQ->weights.vals[j] > 1.0e64) {
+            ww = 1.0; // prevent overflow
+        }
+
         opQ->weights.vals[j] *= ww;
         opQ->zQ.vals[j] *= ww;
     }
@@ -161,21 +166,52 @@ void cvxop_moments_add2taumx(cvxop_moments *opQ, cvx_mat *taumx)
 }
 
 
+void compute_Qx(cvxop_moments *opQ, cvx_mat *txmx)
+{
+    int ii = 0;
+    double temp;
+    // MATH: Ex = E * txmx
+    for (int j = 0; j < opQ->Nrows; j++) {
+        temp = 0.0;
+        for (int i = 0; i < opQ->N; i++) {
+            // double temp = cvxmat_get(&(opQ->Q), j, i) * txmx->vals[i];
+            // temp += opQ->Q.vals[ii] * txmx->vals[i];
+            temp += opQ->Q.vals[j*opQ->N + i] * txmx->vals[i];
+            ii++;
+        }
+        opQ->Qx.vals[j] = temp;
+    }
+}
+
+void compute_Qx2(cvxop_moments *opQ, cvx_mat *txmx)
+{
+    double *Qpos = &(opQ->Q.vals[0]);
+    double *Qxpos = &(opQ->Qx.vals[0]);
+    double *xpos = &(txmx->vals[0]);
+    double temp;
+    // MATH: Ex = E * txmx
+    for (int j = 0; j < opQ->Nrows; j++) {
+        xpos = &(txmx->vals[0]);
+        temp = 0.0;
+        for (int i = 0; i < opQ->N; i++) {
+            // double temp = cvxmat_get(&(opQ->Q), j, i) * txmx->vals[i];
+            // temp += opQ->Q.vals[ii] * txmx->vals[i];
+            temp += (*Qpos++) * (*xpos++);
+        }
+        *Qxpos = temp;
+        *Qxpos++;
+    }
+}
+
+
 /**
  * Primal dual update
  */
 void cvxop_moments_update(cvxop_moments *opQ, cvx_mat *txmx, double rr)
 {
     if (opQ->Nrows > 0) {
-        cvxmat_setvals(&(opQ->Qx), 0.0);
 
-        // MATH: Ex = E * txmx
-        for (int j = 0; j < opQ->Nrows; j++) {
-            for (int i = 0; i < opQ->N; i++) {
-                double temp = cvxmat_get(&(opQ->Q), j, i) * txmx->vals[i];
-                opQ->Qx.vals[j] += temp;
-            }
-        }
+        compute_Qx2(opQ, txmx);
 
         // MATH: Ex = Ex * sigE
         for (int j = 0; j < opQ->Nrows; j++) {
@@ -259,7 +295,9 @@ int cvxop_moments_check(cvxop_moments *opQ, cvx_mat *G)
     }
 
     if (opQ->verbose>0) {   
-        printf("    Moments check:  (%d)  %.2e  %.2e  %.2e \n", moments_bad, opQ->Qx.vals[0], opQ->Qx.vals[1], opQ->Qx.vals[2]);
+        printf("    Moments check:  (%d)  [%.2e %.2e %.2e]  %.2e  %.2e  %.2e   %d \n", moments_bad,  
+        opQ->weights.vals[0], opQ->weights.vals[1], opQ->weights.vals[2], opQ->Qx.vals[0], opQ->Qx.vals[1], opQ->Qx.vals[2],
+        opQ->Nrows);
     }
 
     return moments_bad;

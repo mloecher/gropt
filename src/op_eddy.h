@@ -38,7 +38,7 @@ typedef struct {
 
 } cvxop_eddy;
 
-#define MAXROWS 1024
+#define MAXROWS 16
 
 void cvxop_eddy_init(cvxop_eddy *opE, int N, int ind_inv, double dt,
                      double init_weight, int verbose);

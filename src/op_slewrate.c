@@ -4,7 +4,7 @@
  * Initialize the opD struct
  * This is the operator that enforces the global slew rate limit
  */
-void cvxop_slewrate_init(cvxop_slewrate *opD, int N, double dt, double smax, double init_weight, int verbose)
+void cvxop_slewrate_init(cvxop_slewrate *opD, int N, double dt, double smax, double init_weight, double regularize, int verbose)
 {
     opD->active = 1;
     opD->N = N;
@@ -14,6 +14,8 @@ void cvxop_slewrate_init(cvxop_slewrate *opD, int N, double dt, double smax, dou
     opD->base_smax = smax*dt;
     opD->smax = smax*dt*opD->weight;
     opD->sigD = 1.0/(2.0*opD->weight);
+
+    opD->regularize = regularize;
 
     opD->verbose = verbose;
 
@@ -32,13 +34,15 @@ void cvxop_slewrate_init(cvxop_slewrate *opD, int N, double dt, double smax, dou
  */
 void cvxop_slewrate_reweight(cvxop_slewrate *opD, double weight_mod)
 {
-    opD->weight *= weight_mod;
-    opD->smax = opD->base_smax*opD->weight;
-    opD->sigD = 1.0/(2.0*opD->weight);
+    if (opD->weight < 1.0e64) { // prevent overflow
+        opD->weight *= weight_mod;
+        opD->smax = opD->base_smax*opD->weight;
+        opD->sigD = 1.0/(2.0*opD->weight);
 
-    // zD is usually reset anyways, but this is needed to maintain the existing relaxation
-    for (int i = 0; i < opD->zD.N; i++) {
-        opD->zD.vals[i] *= weight_mod;
+        // zD is usually reset anyways, but this is needed to maintain the existing relaxation
+        for (int i = 0; i < opD->zD.N; i++) {
+            opD->zD.vals[i] *= weight_mod;
+        }
     }
 }
 
@@ -99,13 +103,13 @@ void cvxop_slewrate_update(cvxop_slewrate *opD, cvx_mat *txmx, double rr)
         } else if (temp < -0.99*opD->smax) {
             opD->zDbar.vals[i] = -0.99*opD->smax;
         } else {
-            opD->zDbar.vals[i] = temp;
+            opD->zDbar.vals[i] = temp; // This adds a minor smoothing to the descent
         }
     }
 
     // MATH: zDbar = zDbuff - sigD*zDbar
     for (int i = 0; i < opD->zDbar.N; i++) {
-        opD->zDbar.vals[i] = opD->zDbuff.vals[i] - opD->sigD*opD->zDbar.vals[i];
+        opD->zDbar.vals[i] = opD->zDbuff.vals[i] - opD->regularize * opD->sigD*opD->zDbar.vals[i];
     }
 
     // MATH: zD = rr*zDbar + (1-rr)*zD
@@ -135,7 +139,7 @@ int cvxop_slewrate_check(cvxop_slewrate *opD, cvx_mat *G)
     }
 
     if (opD->verbose>0) {  
-        printf("    Slew check:     (%d)  %d \n", slew_bad, slew_too_high);
+        printf("    Slew check:     (%d)  [%.2e]  %d \n", slew_bad, opD->weight, slew_too_high);
     }
 
     return slew_bad;

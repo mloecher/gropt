@@ -36,6 +36,21 @@ void cvxop_gradient_setFixRange(cvxop_gradient *opG, int start, int end, double 
     }
 }
 
+void cvxop_gradient_setGfix(cvxop_gradient *opG, int N_gfix, double *gfix) 
+{
+    if (N_gfix == 2) {
+        opG->Gfix.vals[0] = gfix[0];
+        opG->Gfix.vals[opG->Gfix.N-1] = gfix[1];
+    } else if (N_gfix > 2) {
+        if (N_gfix == opG->Gfix.N) {
+            for (int i = 0; i < N_gfix; i++) {
+                opG->Gfix.vals[i] = gfix[i]; 
+            }
+        } else {
+            printf("ERROR: N_gfix did not equal the size of G\n");
+        }
+    }
+}
 
 /**
  * Takes an input vector and enforces gradient limits on it.
@@ -122,6 +137,23 @@ double cvxop_gradient_getbval(cvxop_gradient *opG, cvx_mat *G)
 
     return bval;
 }   
+
+int cvxop_gradient_overflowcheck(cvxop_gradient *opG, cvx_mat *G)
+{
+    double max_gval = 0.0;
+    for (int i = 0; i < opG->N; i++) {
+        double val = G->vals[i];
+        if (fabs(val) > max_gval) {
+            max_gval = fabs(val);
+        }
+    }
+
+    if (max_gval > (2.0*opG->gmax)) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
 
 /*
 * Free memory

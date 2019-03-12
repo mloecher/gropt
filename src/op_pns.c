@@ -5,7 +5,7 @@
  * This is the operator that limits PNS based on the single exponential function found in the 
  * Schulte paper
  */
-void cvxop_pns_init(cvxop_pns *opP, int N, double dt, int ind_inv, double thresh, int verbose) 
+void cvxop_pns_init(cvxop_pns *opP, int N, double dt, int ind_inv, double thresh, double init_weight, int verbose) 
 {
     opP->active = 1;
     opP->N = N;
@@ -13,6 +13,7 @@ void cvxop_pns_init(cvxop_pns *opP, int N, double dt, int ind_inv, double thresh
     opP->ind_inv = ind_inv; 
     opP->verbose = verbose;
     opP->thresh = thresh;
+    opP->weight = dt*init_weight;
 
     cvxmat_alloc(&opP->coeff, N, 1);
     cvxmat_alloc(&opP->Ptau, N, 1);
@@ -94,11 +95,28 @@ void cvxop_pns_add2taumx(cvxop_pns *opP, cvx_mat *taumx)
 
         // MATH: taumx -= Btau
         for (int i = 0; i < taumx->N; i++) {
-            taumx->vals[i] += opP->Ptau.vals[i];
+            taumx->vals[i] += opP->weight * opP->Ptau.vals[i];
         }
 
     }
 }
+
+
+/**
+ * Reweight the constraint and update all the subsequent weightings, and also the current descent direction zB
+ */
+void cvxop_pns_reweight(cvxop_pns *opP, double weight_mod)
+{
+    if (opP->weight < 1.0e64) { // prevent overflow
+        opP->weight *= weight_mod;
+
+        // zP is usually reset anyways, but this is needed to maintain the existing relaxation
+        for (int i = 0; i < opP->zP.N; i++) {
+            opP->zP.vals[i] *= weight_mod;
+        }
+    }
+}
+
 
 /**
  * Primal dual update
@@ -189,7 +207,7 @@ int cvxop_pns_check(cvxop_pns *opP, cvx_mat *G)
     }
 
     if (opP->verbose>0) {  
-        printf("    Max PNS:     %f \n", max_pns);
+        printf("    Max PNS:        (%d)  [%.2e]  %.2f \n", bad_pns, opP->weight, max_pns);
     }
 
     return bad_pns;

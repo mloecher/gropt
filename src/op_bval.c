@@ -37,7 +37,7 @@ void cvxop_bval_init(cvxop_bval *opB, int N, int ind_inv, double dt, double init
 
             double tt;
             for (int i = 0; i < N; i++) {
-                tt = N-i;
+                tt = ind_inv-i;
                 opB->C.vals[i] = tt*(tt+1)/2.0;
             }
             for (int i = 0; i < N; i++) {
@@ -177,7 +177,7 @@ void cvxop_bval_add2taumx(cvxop_bval *opB, cvx_mat *taumx)
 
         // MATH: taumx -= Btau
         for (int i = 0; i < taumx->N; i++) {
-            taumx->vals[i] -= opB->Btau.vals[i];
+            taumx->vals[i] += -opB->Btau.vals[i];
         }
 
     }

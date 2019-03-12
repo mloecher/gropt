@@ -38,13 +38,35 @@ void cvxop_eddy_init(cvxop_eddy *opE, int N, int ind_inv, double dt,
  * Add a lambda constraint
  * lambda units are seconds (like dt)
  */
-void cvxop_eddy_addrow(cvxop_eddy *opE, double lambda, double goal, double tol, double offset)
+void cvxop_eddy_addrow(cvxop_eddy *opE, double lambda, double goal, double tol, double mode)
 {
-    for (int i = 0; i < opE->N; i++) {
-        double ii = i;
-        double val = exp(-(ii+1.0)*opE->dt/lambda) - exp(-ii*opE->dt/lambda);
-        cvxmat_set(&(opE->E0), opE->Nrows, opE->N-1-i, val);
+    
+    if (mode < 0.5) {
+        for (int i = 0; i < opE->N; i++) {
+            double ii = opE->N - 1 - i;
+            double val;
+            if (i == 0) {
+                val = -exp(-ii*opE->dt/lambda);
+            } else {
+                val = exp(-(ii+1.0)*opE->dt/lambda) - exp(-ii*opE->dt/lambda);
+            }
+            cvxmat_set(&(opE->E0), opE->Nrows, i, -val);
+        }
+    } else {
+        double val = 0.0;
+        for (int i = 0; i < opE->N; i++) {
+            double ii = opE->N - 1 - i;
+            val += -exp(-ii*opE->dt/lambda);
+        }
+        cvxmat_set(&(opE->E0), opE->Nrows, 0, val*1.0e3*opE->dt);
+
+        for (int i = 1; i < opE->N; i++) {
+            double ii = opE->N - i;
+            val = -exp(-ii*opE->dt/lambda);
+            cvxmat_set(&(opE->E0), opE->Nrows, i, val*1.0e3*opE->dt);
+        }
     }
+
     opE->tolerances.vals[opE->Nrows] = tol;
     opE->goals.vals[opE->Nrows] = goal;
     opE->Nrows += 1;
@@ -265,7 +287,9 @@ int cvxop_eddy_check(cvxop_eddy *opE, cvx_mat *G)
     }
 
     if (opE->verbose>0) {   
-        printf("    Eddy check:     (%d)  %.2e  %.2e  %.2e \n", eddy_bad, opE->Ex.vals[0], opE->Ex.vals[1], opE->Ex.vals[2]);
+        printf("    Eddy check:     (%d)  [%.2e %.2e %.2e]  %.2e  %.2e  %.2e \n", eddy_bad, 
+        opE->weights.vals[0], opE->weights.vals[1], opE->weights.vals[2], opE->Ex.vals[0], opE->Ex.vals[1], opE->Ex.vals[2]);
+
     }
 
     return eddy_bad;

@@ -1,6 +1,9 @@
 *.mexw64
 *.asv
 python/testing/
+python/testing2/
+src/analysis.txt
+src/op_eddy_orig.c
 .vscode/
 
 #################

@@ -4,6 +4,51 @@ import seaborn as sns
 from math import ceil
 import gropt
 
+
+def get2_eddy_mode0(G, lam, dt):
+    E0 = np.zeros_like(G)
+    for i in range(G.size):
+        ii = float(G.size - i - 1)
+        if i == 0:
+            val = -np.exp(-ii*dt/lam)
+        else:
+            val = np.exp(-(ii+1.0)*dt/lam) - np.exp(-ii*dt/lam)
+        E0[i] = -val
+    
+    return E0
+
+def get2_eddy_mode1(G, lam, dt):
+    E1 = np.zeros_like(G)
+    
+    val = 0.0
+    for i in range(G.size):
+        ii = float(G.size - i - 1)
+        val += -np.exp(-ii*dt/lam)
+    E1[0] = val * 1e3 * dt
+    
+    for i in range(1, G.size):
+        ii = float(G.size - i)
+        val = -np.exp(-ii*dt/lam)
+        E1[i] = val  * 1e3 * dt
+    
+    return E1
+
+
+def get_eddy_curves(G, dt, max_lam, n_lam):
+    all_lam = np.linspace(1e-4, max_lam, n_lam)
+    all_e0 = []
+    all_e1 = []
+    for lam in all_lam:
+        lam = lam * 1.0e-3
+
+        E0 = get2_eddy_mode0(G, lam, dt)
+        all_e0.append(np.sum(E0*G))
+
+        E1 = get2_eddy_mode1(G, lam, dt)
+        all_e1.append(np.sum(E1*G))
+
+    return all_lam, all_e0, all_e1
+
 def get_min_TE(params, bval = 1000, min_TE = -1, max_TE = -1):
     if params['mode'][:4] == 'diff':
         if min_TE < 0:
@@ -43,7 +88,8 @@ def get_min_TE_diff(params, target_bval, min_TE, max_TE):
     while ((T_range*1e-3) > (dt/4.0)): 
         params['TE'] = T_lo + (T_range)/2.0
         print(' %.3f' % params['TE'], end='', flush=True)
-        G, lim_break = gropt.gropt(params)
+        G, ddebug = gropt.gropt(params)
+        lim_break = ddebug[14]
         bval = get_bval(G, params)
         if bval > target_bval:
             T_hi = params['TE']
@@ -76,7 +122,8 @@ def get_min_TE_free(params, min_TE, max_TE):
     while ((T_range*1e-3) > (dt/4.0)): 
         params['TE'] = T_lo + (T_range)/2.0
         print(' %.3f' % params['TE'], end='', flush=True)
-        G, lim_break = gropt.gropt(params)
+        G, ddebug = gropt.gropt(params)
+        lim_break = ddebug[14]
         if lim_break == 0:
             T_hi = params['TE']
             if T_hi < best_time:

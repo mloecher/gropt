@@ -8,6 +8,7 @@ params.T_readout = 12.0;
 params.T_90 = 3.0;
 params.T_180 = 6.0;
 params.dt = 500e-6;
+params.dt_out = 10e-6;
 
 [G, lim_break] = gropt(params);
 

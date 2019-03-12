@@ -8,19 +8,26 @@ cdef extern from "../src/optimize_kernel.c":
                                                         double dt0, double gmax, double smax, double TE, 
                                                         int N_moments, double *moments_params, double PNS_thresh, 
                                                         double T_readout, double T_90, double T_180, int diffmode, double dt_out,
-                                                        int N_eddy, double *eddy_params)
+                                                        int N_eddy, double *eddy_params, double search_bval, double slew_reg)
 
     void _run_kernel_diff_fixedN "run_kernel_diff_fixedN"(double **G_out, int *N_out, double **ddebug, int verbose, 
                                                         int N0, double gmax, double smax, double TE, 
                                                         int N_moments, double *moments_params, double PNS_thresh, 
                                                         double T_readout, double T_90, double T_180, int diffmode, double dt_out,
-                                                        int N_eddy, double *eddy_params)
+                                                        int N_eddy, double *eddy_params, double search_bval, double slew_reg)
 
     void _run_kernel_diff_fixedN_Gin "run_kernel_diff_fixedN_Gin"(double **G_out, int *N_out, double **ddebug, int verbose, 
                                                                 double *G_in, int N0, double gmax, double smax, double TE, 
                                                                 int N_moments, double *moments_params, double PNS_thresh, 
                                                                 double T_readout, double T_90, double T_180, int diffmode,  double dt_out,
-                                                                int N_eddy, double *eddy_params)
+                                                                int N_eddy, double *eddy_params, double search_bval, double slew_reg)
+
+    void _run_kernel_diff_fixeddt_fixG "run_kernel_diff_fixeddt_fixG"(double **G_out, int *N_out, double **ddebug, int verbose,
+                                                                    double dt0, double gmax, double smax, double TE,
+                                                                    int N_moments, double *moments_params, double PNS_thresh, 
+                                                                    double T_readout, double T_90, double T_180, int diffmode, double dt_out,
+                                                                    int N_eddy, double *eddy_params, double search_bval,
+                                                                    int N_gfix, double *gfix, double slew_reg)
 
 
 def array_prep(A, dtype, linear=True):
@@ -34,15 +41,6 @@ def array_prep(A, dtype, linear=True):
 
     return A
 
-
-def test_memviews():
-    A = np.arange(9, dtype=np.intc).reshape((3,3))
-
-    cdef int[::1] A_view = array_prep(A, np.intc)
-    cdef int i
-
-    for i in range(9):
-        print(A_view[i])
 
 @cython.boundscheck(False) 
 @cython.wraparound(False)
@@ -157,12 +155,24 @@ def gropt(params, verbose=0):
     else:
         pns_thresh = -1.0
 
+    if 'gfix' in params:
+        gfix = params['gfix']
+    else:
+        gfix = np.array([])
+
+    if 'slew_reg' in params:
+        slew_reg = params['slew_reg']
+    else:
+        slew_reg = 1.0
+
+
     #--------------
     # Done reading params, now run the C routines
     #--------------
 
     moment_params = np.array(moment_params)
     eddy_params = np.array(eddy_params)
+    gfix = np.array(gfix)
     
 
     cdef int N_moments = moment_params.shape[0]
@@ -175,26 +185,36 @@ def gropt(params, verbose=0):
         eddy_params = np.array([0.0])
     cdef double[::1] eddy_params_view = array_prep(eddy_params, np.float64)
 
+    cdef int N_gfix = gfix.size
+    if N_gfix == 0: # Needed only if bounds-checking is on for some reason
+        gfix = np.array([0.0])
+    cdef double[::1] gfix_view = array_prep(gfix, np.float64)
+
     cdef double *G_out
     cdef int N_out  
     cdef double *ddebug
 
     if N0 > 0:
         _run_kernel_diff_fixedN(&G_out, &N_out, &ddebug, verbose, N0, gmax, smax, TE, N_moments, &moment_params_view[0], 
-                                pns_thresh, T_readout, T_90, T_180, diffmode, dt_out, N_eddy, &eddy_params_view[0])
+                                pns_thresh, T_readout, T_90, T_180, diffmode, dt_out, N_eddy, &eddy_params_view[0], -1.0, slew_reg)
     elif dt > 0:
-        _run_kernel_diff_fixeddt(&G_out, &N_out, &ddebug, verbose, dt, gmax, smax, TE, N_moments, &moment_params_view[0], 
-                                 pns_thresh, T_readout, T_90, T_180, diffmode, dt_out, N_eddy, &eddy_params_view[0])
+        if N_gfix > 0:
+            _run_kernel_diff_fixeddt_fixG(&G_out, &N_out, &ddebug, verbose, dt, gmax, smax, TE, N_moments, &moment_params_view[0], 
+                                                                    pns_thresh, T_readout, T_90, T_180, diffmode, dt_out, N_eddy, &eddy_params_view[0], -1.0,
+                                                                    N_gfix, &gfix_view[0], slew_reg)
+        else:
+            _run_kernel_diff_fixeddt(&G_out, &N_out, &ddebug, verbose, dt, gmax, smax, TE, N_moments, &moment_params_view[0], 
+                                    pns_thresh, T_readout, T_90, T_180, diffmode, dt_out, N_eddy, &eddy_params_view[0], -1.0, slew_reg)
 
     G_return = np.empty(N_out)
     for i in range(N_out):
         G_return[i] = G_out[i]
 
-    debug_out = np.empty(480000)
-    for i in range(480000):
+    debug_out = np.empty(10000000)
+    for i in range(10000000):
         debug_out[i] = ddebug[i]
 
-    return G_return, debug_out[14]
+    return G_return, debug_out
 
 
 def run_diffkernel_fixN(gmax, smax, MMT, TE, T_readout, T_90, T_180, diffmode, N0 = 64, dt_out = -1.0, 
@@ -225,14 +245,14 @@ def run_diffkernel_fixN(gmax, smax, MMT, TE, T_readout, T_90, T_180, diffmode, N
         eddy_params = np.ascontiguousarray(np.ravel(np.zeros(4)), np.float64)
     cdef np.ndarray[np.float64_t, ndim=1, mode="c"] eddy_params_c = eddy_params
 
-    _run_kernel_diff_fixedN(&G_out, &N_out, &ddebug, verbose, N0, gmax, smax, TE, N_moments, &m_params_c[0], pns_thresh, T_readout, T_90, T_180, diffmode, dt_out, N_eddy, &eddy_params_c[0])
+    _run_kernel_diff_fixedN(&G_out, &N_out, &ddebug, verbose, N0, gmax, smax, TE, N_moments, &m_params_c[0], pns_thresh, T_readout, T_90, T_180, diffmode, dt_out, N_eddy, &eddy_params_c[0], -1.0, 1.0)
 
     G_return = np.zeros(N_out)
     for i in range(N_out):
         G_return[i] = G_out[i]
 
-    debug_out = np.zeros(480000)
-    for i in range(480000):
+    debug_out = np.zeros(800000)
+    for i in range(800000):
         debug_out[i] = ddebug[i]
 
     return G_return, debug_out
@@ -266,7 +286,7 @@ def run_diffkernel_fixN_Gin(G_in, gmax, smax, MMT, TE, T_readout, T_90, T_180, d
         eddy_params = np.ascontiguousarray(np.ravel(np.zeros(4)), np.float64)
     cdef np.ndarray[np.float64_t, ndim=1, mode="c"] eddy_params_c = eddy_params
 
-    _run_kernel_diff_fixedN_Gin(&G_out, &N_out, &ddebug, verbose, &G_in_c[0], N0, gmax, smax, TE, N_moments, &m_params_c[0], pns_thresh, T_readout, T_90, T_180, diffmode, dt_out, N_eddy, &eddy_params_c[0])
+    _run_kernel_diff_fixedN_Gin(&G_out, &N_out, &ddebug, verbose, &G_in_c[0], N0, gmax, smax, TE, N_moments, &m_params_c[0], pns_thresh, T_readout, T_90, T_180, diffmode, dt_out, N_eddy, &eddy_params_c[0], -1.0, 1.0)
 
     G_return = np.zeros(N_out)
     for i in range(N_out):
@@ -305,7 +325,7 @@ def run_diffkernel_fixdt(gmax, smax, MMT, TE, T_readout, T_90, T_180, diffmode, 
         eddy_params = np.ascontiguousarray(np.ravel(np.zeros(4)), np.float64)
     cdef np.ndarray[np.float64_t, ndim=1, mode="c"] eddy_params_c = eddy_params
 
-    _run_kernel_diff_fixeddt(&G_out, &N_out, &ddebug, verbose, dt, gmax, smax, TE, N_moments, &m_params_c[0], pns_thresh, T_readout, T_90, T_180, diffmode, dt_out, N_eddy, &eddy_params_c[0])
+    _run_kernel_diff_fixeddt(&G_out, &N_out, &ddebug, verbose, dt, gmax, smax, TE, N_moments, &m_params_c[0], pns_thresh, T_readout, T_90, T_180, diffmode, dt_out, N_eddy, &eddy_params_c[0], -1.0, 1.0)
 
     G_return = np.zeros(N_out)
     for i in range(N_out):
@@ -339,7 +359,7 @@ def run_kernel_fixdt(gmax, smax, m_params, TE, T_readout, T_90, T_180, diffmode,
         eddy_params = np.ascontiguousarray(np.ravel(np.zeros(4)), np.float64)
     cdef np.ndarray[np.float64_t, ndim=1, mode="c"] eddy_params_c = eddy_params
 
-    _run_kernel_diff_fixeddt(&G_out, &N_out, &ddebug, verbose, dt, gmax, smax, TE, N_moments, &m_params_c[0], pns_thresh, T_readout, T_90, T_180, diffmode, dt_out, N_eddy, &eddy_params_c[0])
+    _run_kernel_diff_fixeddt(&G_out, &N_out, &ddebug, verbose, dt, gmax, smax, TE, N_moments, &m_params_c[0], pns_thresh, T_readout, T_90, T_180, diffmode, dt_out, N_eddy, &eddy_params_c[0], -1.0, 1.0)
 
     G_return = np.zeros(N_out) 
     for i in range(N_out):

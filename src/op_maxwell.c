@@ -89,9 +89,9 @@ void cvxop_maxwell_update(cvxop_maxwell *opX, cvx_mat *txmx, double rr)
         rr = 1.0;
         opX->zX = rr * opX->zXbar + (1 - rr) * opX->zX;
 
-        for (int i = 0; i < (opX->N); i++) {
-            opX->x_store.vals[i] = txmx->vals[i];
-        }
+        // for (int i = 0; i < (opX->N); i++) {
+        //     opX->x_store.vals[i] = txmx->vals[i];
+        // }
 
     }
 }
@@ -114,7 +114,7 @@ int cvxop_maxwell_check(cvxop_maxwell *opX, cvx_mat *G)
     double x_diff = sqrt(x0) - sqrt(x1);
 
     if (opX->verbose>0) {  
-        printf("    Maxwell:     %f \n", x_diff);
+        printf("    Maxwell:        (%d)  [%.2e]  %.2f \n", 0, 1.0, x_diff);
     }
 
     return 0;
