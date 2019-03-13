@@ -663,7 +663,7 @@ void run_kernel_diff_fixedN_Gin(double **G_out, int *N_out, double **ddebug, int
                                 double *G_in, int N0, double gmax, double smax, double TE, 
                                 int N_moments, double *moments_params, double PNS_thresh,  
                                 double T_readout, double T_90, double T_180, int diffmode, double dt_out,
-                                int N_eddy, double *eddy_params, double search_bval, double slew_reg)
+                                int N_eddy, double *eddy_params, double search_bval, double slew_reg, int input_weights, double *weights)
 {
     int N = N0;
     double dt = (TE-T_readout) * 1.0e-3 / (double) N;

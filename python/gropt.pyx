@@ -20,7 +20,7 @@ cdef extern from "../src/optimize_kernel.c":
                                                                 double *G_in, int N0, double gmax, double smax, double TE, 
                                                                 int N_moments, double *moments_params, double PNS_thresh, 
                                                                 double T_readout, double T_90, double T_180, int diffmode,  double dt_out,
-                                                                int N_eddy, double *eddy_params, double search_bval, double slew_reg)
+                                                                int N_eddy, double *eddy_params, double search_bval, double slew_reg, int input_weights, double *weights)
 
     void _run_kernel_diff_fixeddt_fixG "run_kernel_diff_fixeddt_fixG"(double **G_out, int *N_out, double **ddebug, int verbose,
                                                                     double dt0, double gmax, double smax, double TE,
@@ -210,8 +210,8 @@ def gropt(params, verbose=0):
     for i in range(N_out):
         G_return[i] = G_out[i]
 
-    debug_out = np.empty(10000000)
-    for i in range(10000000):
+    debug_out = np.empty(100)
+    for i in range(100):
         debug_out[i] = ddebug[i]
 
     return G_return, debug_out
@@ -286,7 +286,7 @@ def run_diffkernel_fixN_Gin(G_in, gmax, smax, MMT, TE, T_readout, T_90, T_180, d
         eddy_params = np.ascontiguousarray(np.ravel(np.zeros(4)), np.float64)
     cdef np.ndarray[np.float64_t, ndim=1, mode="c"] eddy_params_c = eddy_params
 
-    _run_kernel_diff_fixedN_Gin(&G_out, &N_out, &ddebug, verbose, &G_in_c[0], N0, gmax, smax, TE, N_moments, &m_params_c[0], pns_thresh, T_readout, T_90, T_180, diffmode, dt_out, N_eddy, &eddy_params_c[0], -1.0, 1.0)
+    _run_kernel_diff_fixedN_Gin(&G_out, &N_out, &ddebug, verbose, &G_in_c[0], N0, gmax, smax, TE, N_moments, &m_params_c[0], pns_thresh, T_readout, T_90, T_180, diffmode, dt_out, N_eddy, &eddy_params_c[0], -1.0, 1.0, 0, NULL)
 
     G_return = np.zeros(N_out)
     for i in range(N_out):
