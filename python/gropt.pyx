@@ -210,8 +210,8 @@ def gropt(params, verbose=0):
     for i in range(N_out):
         G_return[i] = G_out[i]
 
-    debug_out = np.empty(10000000)
-    for i in range(10000000):
+    debug_out = np.empty(100)
+    for i in range(100):
         debug_out[i] = ddebug[i]
 
     return G_return, debug_out
