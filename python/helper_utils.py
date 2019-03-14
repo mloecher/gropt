@@ -49,7 +49,7 @@ def get_eddy_curves(G, dt, max_lam, n_lam):
 
     return all_lam, all_e0, all_e1
 
-def get_min_TE(params, bval = 1000, min_TE = -1, max_TE = -1):
+def get_min_TE(params, bval = 1000, min_TE = -1, max_TE = -1, verbose = 0):
     if params['mode'][:4] == 'diff':
         if min_TE < 0:
             min_TE = params['T_readout'] + params['T_90'] + params['T_180'] + 10
@@ -57,7 +57,7 @@ def get_min_TE(params, bval = 1000, min_TE = -1, max_TE = -1):
         if max_TE < 0:
             max_TE = 200
 
-        G_out, T_out = get_min_TE_diff(params, bval, min_TE, max_TE)
+        G_out, T_out = get_min_TE_diff(params, bval, min_TE, max_TE, verbose)
 
     elif params['mode'] == 'free':
         if min_TE < 0:
@@ -66,12 +66,12 @@ def get_min_TE(params, bval = 1000, min_TE = -1, max_TE = -1):
         if max_TE < 0:
             max_TE = 5.0
 
-        G_out, T_out = get_min_TE_free(params, min_TE, max_TE)
+        G_out, T_out = get_min_TE_free(params, min_TE, max_TE, verbose)
     
     return G_out, T_out
 
 
-def get_min_TE_diff(params, target_bval, min_TE, max_TE):
+def get_min_TE_diff(params, target_bval, min_TE, max_TE, verbose = 0):
     
     T_lo = min_TE
     T_hi = max_TE
@@ -84,10 +84,12 @@ def get_min_TE_diff(params, target_bval, min_TE, max_TE):
     else:
         dt = 1.0e-3/params['N0']
 
-    print('Testing TE =', end='', flush=True)
+    if verbose:
+        print('Testing TE =', end='', flush=True)
     while ((T_range*1e-3) > (dt/4.0)): 
         params['TE'] = T_lo + (T_range)/2.0
-        print(' %.3f' % params['TE'], end='', flush=True)
+        if verbose:
+            print(' %.3f' % params['TE'], end='', flush=True)
         G, ddebug = gropt.gropt(params)
         lim_break = ddebug[14]
         bval = get_bval(G, params)
@@ -101,11 +103,12 @@ def get_min_TE_diff(params, target_bval, min_TE, max_TE):
             T_lo = params['TE']
         T_range = T_hi-T_lo
 
-    print(' Final TE = %.3f ms' % T_out)
+    if verbose:
+        print(' Final TE = %.3f ms' % T_out)
 
     return G_out, T_out
 
-def get_min_TE_free(params, min_TE, max_TE):
+def get_min_TE_free(params, min_TE, max_TE, verbose = 0):
     
     T_lo = min_TE
     T_hi = max_TE
@@ -118,10 +121,12 @@ def get_min_TE_free(params, min_TE, max_TE):
     else:
         dt = 1.0e-3/params['N0']
 
-    print('Testing TE =', end='', flush=True)
+    if verbose:
+        print('Testing TE =', end='', flush=True)
     while ((T_range*1e-3) > (dt/4.0)): 
         params['TE'] = T_lo + (T_range)/2.0
-        print(' %.3f' % params['TE'], end='', flush=True)
+        if verbose:
+            print(' %.3f' % params['TE'], end='', flush=True)
         G, ddebug = gropt.gropt(params)
         lim_break = ddebug[14]
         if lim_break == 0:
@@ -134,7 +139,8 @@ def get_min_TE_free(params, min_TE, max_TE):
             T_lo = params['TE']
         T_range = T_hi-T_lo
 
-    print(' Final TE = %.3f ms' % T_out)
+    if verbose:
+        print(' Final TE = %.3f ms' % T_out)
 
     return G_out, T_out
 
