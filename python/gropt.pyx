@@ -3,6 +3,10 @@ cimport numpy as np
 import time
 cimport cython
 
+global N_ddebug
+N_ddebug = 100
+
+
 cdef extern from "../src/optimize_kernel.c":
     void _run_kernel_diff_fixeddt "run_kernel_diff_fixeddt"(double **G_out, int *N_out, double **ddebug, int verbose, 
                                                         double dt0, double gmax, double smax, double TE, 
@@ -210,8 +214,8 @@ def gropt(params, verbose=0):
     for i in range(N_out):
         G_return[i] = G_out[i]
 
-    debug_out = np.empty(100)
-    for i in range(100):
+    debug_out = np.empty(N_ddebug)
+    for i in range(N_ddebug):
         debug_out[i] = ddebug[i]
 
     return G_return, debug_out
@@ -251,8 +255,8 @@ def run_diffkernel_fixN(gmax, smax, MMT, TE, T_readout, T_90, T_180, diffmode, N
     for i in range(N_out):
         G_return[i] = G_out[i]
 
-    debug_out = np.zeros(800000)
-    for i in range(800000):
+    debug_out = np.zeros(N_ddebug)
+    for i in range(N_ddebug):
         debug_out[i] = ddebug[i]
 
     return G_return, debug_out
@@ -292,8 +296,8 @@ def run_diffkernel_fixN_Gin(G_in, gmax, smax, MMT, TE, T_readout, T_90, T_180, d
     for i in range(N_out):
         G_return[i] = G_out[i]
 
-    debug_out = np.zeros(480000)
-    for i in range(480000):
+    debug_out = np.zeros(N_ddebug)
+    for i in range(N_ddebug):
         debug_out[i] = ddebug[i]
 
     return G_return, debug_out
@@ -331,8 +335,8 @@ def run_diffkernel_fixdt(gmax, smax, MMT, TE, T_readout, T_90, T_180, diffmode, 
     for i in range(N_out):
         G_return[i] = G_out[i]
 
-    debug_out = np.zeros(480000)
-    for i in range(480000):
+    debug_out = np.zeros(N_ddebug)
+    for i in range(N_ddebug):
         debug_out[i] = ddebug[i]
 
     return G_return, debug_out
@@ -365,8 +369,8 @@ def run_kernel_fixdt(gmax, smax, m_params, TE, T_readout, T_90, T_180, diffmode,
     for i in range(N_out):
         G_return[i] = G_out[i]
 
-    debug_out = np.zeros(480000)
-    for i in range(480000):
+    debug_out = np.zeros(N_ddebug)
+    for i in range(N_ddebug):
         debug_out[i] = ddebug[i]
 
     return G_return, debug_out
