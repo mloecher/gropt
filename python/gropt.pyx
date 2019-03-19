@@ -258,14 +258,14 @@ def run_diffkernel_fixN(gmax, smax, MMT, TE, T_readout, T_90, T_180, diffmode, N
     return G_return, debug_out
 
 
-def run_diffkernel_fixN_Gin(G_in, gmax, smax, MMT, TE, T_readout, T_90, T_180, diffmode, N0 = 64, dt_out = -1.0, 
+def run_diffkernel_fixN_Gin(G_in, gmax, smax, MMT, TE, T_readout, T_90, T_180, diffmode, weights, N0 = 64, dt_out = -1.0, 
                             eddy = [], pns_thresh = -1.0, verbose = 1):
 
-    m_params = [[0.0, 0.0, -1.0, -1.0, 0.0, 1.0e-3]]
+    m_params = [[0.0, 0.0, 0.0, -1.0, -1.0, 0.0, 1.0e-3]]
     if MMT > 0:
-        m_params.append([0.0, 1.0, -1.0, -1.0, 0.0, 1.0e-3])
+        m_params.append([0.0, 1.0, 0.0, -1.0, -1.0, 0.0, 1.0e-3])
     if MMT > 1:
-        m_params.append([0.0, 2.0, -1.0, -1.0, 0.0, 1.0e-3])
+        m_params.append([0.0, 2.0, 0.0, -1.0, -1.0, 0.0, 1.0e-3])
     m_params = np.array(m_params).flatten()
     eddy = np.array(eddy).flatten() 
 
@@ -278,6 +278,7 @@ def run_diffkernel_fixN_Gin(G_in, gmax, smax, MMT, TE, T_readout, T_90, T_180, d
     cdef double *ddebug
 
     cdef np.ndarray[np.float64_t, ndim=1, mode="c"] G_in_c = np.ascontiguousarray(np.ravel(G_in), np.float64)
+    cdef np.ndarray[np.float64_t, ndim=1, mode="c"] weights_c = np.ascontiguousarray(np.ravel(weights), np.float64)
 
     N_eddy = eddy.size//4
     if N_eddy > 0:
@@ -286,14 +287,14 @@ def run_diffkernel_fixN_Gin(G_in, gmax, smax, MMT, TE, T_readout, T_90, T_180, d
         eddy_params = np.ascontiguousarray(np.ravel(np.zeros(4)), np.float64)
     cdef np.ndarray[np.float64_t, ndim=1, mode="c"] eddy_params_c = eddy_params
 
-    _run_kernel_diff_fixedN_Gin(&G_out, &N_out, &ddebug, verbose, &G_in_c[0], N0, gmax, smax, TE, N_moments, &m_params_c[0], pns_thresh, T_readout, T_90, T_180, diffmode, dt_out, N_eddy, &eddy_params_c[0], -1.0, 1.0, 0, NULL)
+    _run_kernel_diff_fixedN_Gin(&G_out, &N_out, &ddebug, verbose, &G_in_c[0], N0, gmax, smax, TE, N_moments, &m_params_c[0], pns_thresh, T_readout, T_90, T_180, diffmode, dt_out, N_eddy, &eddy_params_c[0], -1.0, 1.0, 1, &weights_c[0])
 
     G_return = np.zeros(N_out)
     for i in range(N_out):
         G_return[i] = G_out[i]
 
-    debug_out = np.zeros(480000)
-    for i in range(480000):
+    debug_out = np.zeros(100)
+    for i in range(100):
         debug_out[i] = ddebug[i]
 
     return G_return, debug_out

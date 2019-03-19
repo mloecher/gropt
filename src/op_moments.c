@@ -65,12 +65,17 @@ void cvxop_moments_finishinit(cvxop_moments *opQ)
             opQ->norms.vals[j] += temp*temp;
         }
         opQ->norms.vals[j] = sqrt(opQ->norms.vals[j]);
+        // opQ->norms.vals[j] = 1.0;
     }
 
     // Scale row norms to 1.0
     for (int j = 0; j < opQ->Nrows; j++) {
         opQ->weights.vals[j] /= opQ->norms.vals[j];
     }
+
+    opQ->weights.vals[0] *= 1.0;
+    opQ->weights.vals[1] *= 100.0;
+    opQ->weights.vals[2] *= 1000.0;
 
     // Make Q as weighted Q0
     for (int j = 0; j < opQ->Nrows; j++) {

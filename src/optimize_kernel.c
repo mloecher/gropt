@@ -64,7 +64,7 @@ void cvx_optimize_kernel(cvx_mat *G, cvxop_gradient *opG, cvxop_slewrate *opD,
                          double *ddebug, int N_converge, double stop_increase,
                          int diffmode, double search_bval)
 {    
-    int max_iter = 30000;
+    int max_iter = 100000;
     int check_amount = 100;
     int i_check = 0;
     int N_backlog = max_iter / check_amount;
@@ -668,12 +668,25 @@ void run_kernel_diff_fixedN_Gin(double **G_out, int *N_out, double **ddebug, int
     int N = N0;
     double dt = (TE-T_readout) * 1.0e-3 / (double) N;
 
+    double b_weight = 1.0;
+    double s_weight = 1.0;
+    double m_weight = 100.0;
+    double reduce = 10.0;
+
+    if (input_weights > 0) {
+        b_weight = weights[0];
+        s_weight = weights[1];
+        m_weight = weights[2];
+        reduce = weights[3];
+    }
+    
+
     run_kernel_diff(G_out, N_out, ddebug, verbose,
                         N, dt, gmax, smax, TE, 
                         N_moments, moments_params, PNS_thresh,
                         T_readout, T_90, T_180, diffmode,
-                        1.0, 1.0, 100.0, 
-                        10.0,  dt_out,
+                        b_weight, s_weight, m_weight, 
+                        reduce,  dt_out,
                         N_eddy, eddy_params,
                         1, G_in, search_bval,
                         0, NULL, slew_reg);
@@ -697,6 +710,7 @@ void run_kernel_diff_fixeddt(double **G_out, int *N_out, double **ddebug, int ve
     // double dt = (TE-T_readout) * 1.0e-3 / (double) N;
     double dt = dt0;
 
+    
     run_kernel_diff(G_out, N_out, ddebug, verbose,
                             N, dt, gmax, smax, TE, 
                             N_moments, moments_params, PNS_thresh,
@@ -844,6 +858,7 @@ void minTE_diff(double **G_out, int *N_out, double **ddebug, int verbose,
     bval = (*ddebug)[13];
     
     if (verbose > 0) {printf ("Search at TE = %.2f gave bval = %.1f  T_range = %.2f\n", TE, bval, T_range);}
+    (*ddebug)[15] = TE;
 }
 
 
@@ -854,7 +869,7 @@ int main (void)
     printf ("In optimize_kernel.c main function\n");
     
     // test_timer();
-    test_minTE_diff();
+    test_minTE_diff2();
 
     return 0;
 }
@@ -920,6 +935,67 @@ void test_minTE_diff()
     gettimeofday(&end, NULL);
     diff = (end.tv_sec - start.tv_sec) + 1.0e-6 * (end.tv_usec - start.tv_usec);
     printf("\nOperation took %f ms (%f ms total)\n", (1.0e3*diff), 1.0e3*diff);
+
+    return;
+}
+
+
+
+
+
+void test_minTE_diff2()
+{
+    int diffmode = 2;
+
+    double *G;
+    int N;
+    double *debug;
+
+    int N_eddy = 0; 
+    double *eddy_params;
+
+    int N_moments = 3; 
+    double *moment_params = (double *)malloc(N_moments*7*sizeof(double));
+    
+    // M0 Nulling
+    int ii = 0;
+    moment_params[ii+0] = 0; moment_params[ii+1] = 0; moment_params[ii+2] = 0; 
+    moment_params[ii+3] = -1; moment_params[ii+4] = -1; 
+    moment_params[ii+5] = 0; moment_params[ii+6] = 1.0e-3;
+
+    ii = 7;
+    moment_params[ii+0] = 0; moment_params[ii+1] = 1; moment_params[ii+2] = 0; 
+    moment_params[ii+3] = -1; moment_params[ii+4] = -1; 
+    moment_params[ii+5] = 0; moment_params[ii+6] = 1.0e-3;
+
+    ii = 14;
+    moment_params[ii+0] = 0; moment_params[ii+1] = 2; moment_params[ii+2] = 0; 
+    moment_params[ii+3] = -1; moment_params[ii+4] = -1; 
+    moment_params[ii+5] = 0; moment_params[ii+6] = 1.0e-3;
+
+    double PNS_thresh = -1.0;
+
+    double dt = 100e-6;
+    double gmax = .05;
+    double smax = 50.0;
+
+    double T_readout = 6.336;
+    double T_90 = 2.56;
+    double T_180 = 5.552;
+
+    // double dt_out = 10.0e-6;
+    double dt_out = -1.0;
+
+    double bval = 1000;
+    int verbose = 0;
+
+
+    minTE_diff(&G, &N, &debug, verbose, dt, gmax, smax, bval, 
+                        N_moments, moment_params, PNS_thresh, 
+                            T_readout, T_90, T_180, diffmode, dt_out, N_eddy, eddy_params, 1.0);
+
+
+    printf("\nFinal TE is %f\n", debug[15]);
 
     return;
 }
