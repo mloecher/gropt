@@ -37,7 +37,7 @@ void cvxop_bval_init(cvxop_bval *opB, int N, int ind_inv, double dt, double init
 
             double tt;
             for (int i = 0; i < N; i++) {
-                tt = ind_inv-i;
+                tt = N-i;
                 opB->C.vals[i] = tt*(tt+1)/2.0;
             }
             for (int i = 0; i < N; i++) {
@@ -140,9 +140,9 @@ void cvxmat_bval_multB(cvx_mat *out, cvxop_bval *opB, cvx_mat *in) {
     double gt = 0.0;
     for (int i = 0; i < opB->N; i++) {
         if (i < opB->ind_inv) {
-            gt += in->vals[i];
-        } else {
             gt -= in->vals[i];
+        } else {
+            gt += in->vals[i];
         }
         opB->csx.vals[i] = gt;
     }  

@@ -64,7 +64,7 @@ void cvx_optimize_kernel(cvx_mat *G, cvxop_gradient *opG, cvxop_slewrate *opD,
                          double *ddebug, int N_converge, double stop_increase,
                          int diffmode, double search_bval)
 {    
-    int max_iter = 30000;
+    int max_iter = 60000;
     int check_amount = 100;
     int i_check = 0;
     int N_backlog = max_iter / check_amount;
@@ -332,28 +332,32 @@ void cvx_optimize_kernel(cvx_mat *G, cvxop_gradient *opG, cvxop_slewrate *opD,
                 } 
 
                 if (bad_moments > 0) {
-                    cvxop_moments_reweight(opQ, 2.0*bval_reduction);
+                    cvxop_moments_reweight(opQ, 1.0 + bval_reduction);
+                    cvxop_slewrate_reweight(opD, 1.0 + bval_reduction/4.0);
                     if (verbose > 0) {printf("  ^^ moments ^^  ");}
                 }
                 if (bad_slew > 0) {
-                    cvxop_slewrate_reweight(opD, bval_reduction);
+                    cvxop_slewrate_reweight(opD, 1.0 + bval_reduction);
                     if (verbose > 0) {printf("  ^^ slew ^^  ");}
                 }
                 if (bad_eddy > 0) {
-                    cvxop_eddy_reweight(opE, bval_reduction/2.0);
+                    cvxop_eddy_reweight(opE, 1.0 + 10.0*bval_reduction);
                     if (verbose > 0) {printf("  ^^ eddy ^^  ");}
                 }
                 if (bad_pns > 0) {
-                    cvxop_pns_reweight(opP, bval_reduction/2.0);
+                    cvxop_pns_reweight(opP, 1.0 + 10.0*bval_reduction);
                     if (verbose > 0) {printf("  ^^ PNS ^^  ");}
                 }     
 
 
-                if ((bad_slew < 1) && (bad_moments < 1) && (bad_eddy < 1) && (bad_pns < 1)) {
-                    cvxop_bval_reweight(opB, bval_reduction);
-                    cvxop_beta_reweight(opC, bval_reduction);
+                // if ((bad_slew < 1) && (bad_moments < 1) && (bad_eddy < 1) && (bad_pns < 1)) {
+                    cvxop_bval_reweight(opB, 1.0 + bval_reduction/10.0);
+                    // cvxop_beta_reweight(opC, 1.0 + bval_reduction/10.0);
                     if (verbose > 0) {printf("  ^^ bval ^^  ");}
-                }
+                    for (int i = 0; i < opB->zB.N; i++) {
+                        opB->zB.vals[i] = 0.0; 
+                    }
+                // }
                            
 
                 if (verbose > 0) { printf("\n");}
@@ -367,9 +371,7 @@ void cvx_optimize_kernel(cvx_mat *G, cvxop_gradient *opG, cvxop_slewrate *opD,
                 cvxop_pns_add2tau(opP, &tau);
                 cvxmat_EWinvert(&tau);
                 
-                for (int i = 0; i < opB->zB.N; i++) {
-                    opB->zB.vals[i] = 0.0; 
-                }
+                
                 for (int i = 0; i < opD->zD.N; i++) {
                     opD->zD.vals[i] = 0.0;
                 }
@@ -477,7 +479,7 @@ void run_kernel_diff(double **G_out, int *N_out, double **ddebug, int verbose,
                             int N_gfix, double *gfix,
                             double slew_reg)
 {
-    double relax = 1.7;
+    double relax = 1.8;
 
     if (verbose > 0) {
         printf ("\nFirst pass, N = %d    dt = %.2e\n\n", N, dt);
@@ -530,12 +532,12 @@ void run_kernel_diff(double **G_out, int *N_out, double **ddebug, int verbose,
     } else if (diffmode == 2) {
         opC.active = 0; 
         opB.active = 1;
-        N_converge = 6;
+        N_converge = 8;
         stop_increase = 1.0e-3; 
     } else {
         opC.active = 0; 
         opB.active = 0;
-        N_converge = 6;
+        N_converge = 8;
         stop_increase = 1.0e-3; 
     }
 
@@ -575,7 +577,7 @@ void run_kernel_diff(double **G_out, int *N_out, double **ddebug, int verbose,
     
     
     cvxop_eddy opE;
-    cvxop_eddy_init(&opE, N, ind_inv, dt, .00001, verbose);
+    cvxop_eddy_init(&opE, N, ind_inv, dt, .01, verbose);
     for (int i = 0; i < N_eddy; i++) {
         cvxop_eddy_addrow(&opE, (eddy_params[EDDY_PARAMS_LEN*i] * 1.0e-3), 
                                 eddy_params[EDDY_PARAMS_LEN*i+1], 
@@ -701,7 +703,7 @@ void run_kernel_diff_fixeddt(double **G_out, int *N_out, double **ddebug, int ve
                             N, dt, gmax, smax, TE, 
                             N_moments, moments_params, PNS_thresh,
                             T_readout, T_90, T_180, diffmode,
-                            1.0, 1.0, 100.0, 
+                            10.0, 1.0, 10.0, 
                             10.0,  dt_out,
                             N_eddy, eddy_params,
                             0, NULL, search_bval,

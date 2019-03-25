@@ -106,6 +106,7 @@ def get_min_TE_diff(params, target_bval, min_TE, max_TE, verbose = 0):
     if verbose:
         print(' Final TE = %.3f ms' % T_out)
 
+    params['TE'] = T_out
     return G_out, T_out
 
 def get_min_TE_free(params, min_TE, max_TE, verbose = 0):
@@ -185,12 +186,10 @@ def get_moments(G, T_readout, dt):
 
 def get_bval(G, params):
 
-    if params['dt'] < 0:
-        dt = (params['TE']-params['T_readout']) * 1.0e-3 / G.size
-    else:
-        dt = params['dt']
+    TE = params['TE']
+    T_readout = params['T_readout']
+    dt = (TE-T_readout) * 1.0e-3 / G.size
     
-    TE = G.size*dt*1.0e3 + params['T_readout']
     tINV = int(np.floor(TE/dt/1.0e3/2.0))
     GAMMA   = 42.58e3; 
     

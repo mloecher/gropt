@@ -102,10 +102,13 @@ void cvxop_moments_reweight(cvxop_moments *opQ, double weight_mod)
     for (int j = 0; j < opQ->Nrows; j++) {
         ww = 1.0;
         if (opQ->checks.vals[j] > 0) {
-            ww = 4.0 * opQ->checks.vals[j];
-            if (ww > weight_mod) {
-                ww = weight_mod;
-            }
+            ww = weight_mod;
+            // ww = 1.0 * opQ->checks.vals[j];
+            // if (ww > weight_mod) {
+            //     ww = weight_mod;
+            // } else if (ww < 2.0) {
+            //     ww = 2.0;
+            // }
         }
 
         if (opQ->weights.vals[j] > 1.0e64) {

@@ -43,7 +43,7 @@ void cvxop_eddy_addrow(cvxop_eddy *opE, double lambda, double goal, double tol, 
     
     if (mode < 0.5) {
         for (int i = 0; i < opE->N; i++) {
-            double ii = opE->N - 1 - i;
+            double ii = opE->N - 1 - i; 
             double val;
             if (i == 0) {
                 val = -exp(-ii*opE->dt/lambda);
@@ -123,10 +123,11 @@ void cvxop_eddy_reweight(cvxop_eddy *opE, double weight_mod)
     for (int j = 0; j < opE->Nrows; j++) {
         ww = 1.0;
         if (opE->checks.vals[j] > 0) {
-            ww = 2.0 * opE->checks.vals[j];
-            if (ww > weight_mod) {
-                ww = weight_mod;
-            }
+            ww = weight_mod;
+            // ww = 1.0 * opE->checks.vals[j];
+            // if (ww > weight_mod) {
+            //     ww = weight_mod;
+            // }
         }
         opE->weights.vals[j] *= ww;
         opE->zE.vals[j] *= ww;
