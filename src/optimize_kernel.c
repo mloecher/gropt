@@ -317,10 +317,10 @@ void cvx_optimize_kernel(cvx_mat *G, cvxop_gradient *opG, cvxop_slewrate *opD,
                needs_rebalancing = 1;
            }
 
-           int gmax_overflow = cvxop_gradient_overflowcheck(opG, G);
-           if (gmax_overflow > 0) {
-               needs_rebalancing = 1;
-           }
+        //    int gmax_overflow = cvxop_gradient_overflowcheck(opG, G);
+        //    if (gmax_overflow > 0) {
+        //        needs_rebalancing = 1;
+        //    }
 
             if ( (bval_reduction > 0.0) && (count > 0) && (needs_rebalancing > 0) ) {
 
@@ -333,7 +333,7 @@ void cvx_optimize_kernel(cvx_mat *G, cvxop_gradient *opG, cvxop_slewrate *opD,
 
                 if (bad_moments > 0) {
                     cvxop_moments_reweight(opQ, 1.0 + bval_reduction);
-                    cvxop_slewrate_reweight(opD, 1.0 + bval_reduction/4.0);
+                    // cvxop_slewrate_reweight(opD, 1.0 + bval_reduction/4.0);
                     if (verbose > 0) {printf("  ^^ moments ^^  ");}
                 }
                 if (bad_slew > 0) {
@@ -345,11 +345,11 @@ void cvx_optimize_kernel(cvx_mat *G, cvxop_gradient *opG, cvxop_slewrate *opD,
                     if (verbose > 0) {printf("  ^^ eddy ^^  ");}
                 }
                 if (bad_pns > 0) {
-                    cvxop_pns_reweight(opP, 1.0 + 10.0*bval_reduction);
+                    cvxop_pns_reweight(opP, 1.0 + 1.0*bval_reduction);
                     if (verbose > 0) {printf("  ^^ PNS ^^  ");}
                 }     
 
-
+                /*
                 // if ((bad_slew < 1) && (bad_moments < 1) && (bad_eddy < 1) && (bad_pns < 1)) {
                     cvxop_bval_reweight(opB, 1.0 + bval_reduction/10.0);
                     // cvxop_beta_reweight(opC, 1.0 + bval_reduction/10.0);
@@ -358,8 +358,11 @@ void cvx_optimize_kernel(cvx_mat *G, cvxop_gradient *opG, cvxop_slewrate *opD,
                         opB->zB.vals[i] = 0.0; 
                     }
                 // }
+                */
                            
-
+                                   for (int i = 0; i < opB->zB.N; i++) {
+                        opB->zB.vals[i] = 0.0; 
+                    }
                 if (verbose > 0) { printf("\n");}
 
                 cvxmat_setvals(&tau, 0.0);

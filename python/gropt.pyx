@@ -198,6 +198,8 @@ def gropt(params, verbose=0):
     cdef int N_out  
     cdef double *ddebug
 
+    # print(N_gfix)
+
     if N0 > 0:
         _run_kernel_diff_fixedN(&G_out, &N_out, &ddebug, verbose, N0, gmax, smax, TE, N_moments, &moment_params_view[0], 
                                 pns_thresh, T_readout, T_90, T_180, diffmode, dt_out, N_eddy, &eddy_params_view[0], -1.0, slew_reg)
