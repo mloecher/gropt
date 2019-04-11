@@ -39,6 +39,7 @@ elif _platform == "linux":
                     include_dirs=[".",  "../src", numpy.get_include()],
                     library_dirs=[".", "../src"],
                     extra_compile_args=['-std=c11'],
+    )]
 setup(
     ext_modules = cythonize(extensions)
 )
