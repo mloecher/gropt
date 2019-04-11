@@ -32,7 +32,13 @@ elif _platform == "win32":
                     include_dirs=[".", "../src", numpy.get_include()],
                     library_dirs=[".", "../src"],
                    )]
-
+elif _platform == "linux":
+    extensions = [Extension("gropt",
+                    sourcefiles,
+                    language="c",
+                    include_dirs=[".",  "../src", numpy.get_include()],
+                    library_dirs=[".", "../src"],
+                    extra_compile_args=['-std=c11'],
 setup(
     ext_modules = cythonize(extensions)
 )

@@ -103,13 +103,13 @@ void cvxop_slewrate_update(cvxop_slewrate *opD, cvx_mat *txmx, double rr)
         } else if (temp < -0.99*opD->smax) {
             opD->zDbar.vals[i] = -0.99*opD->smax;
         } else {
-            opD->zDbar.vals[i] = temp; // This adds a minor smoothing to the descent
+            opD->zDbar.vals[i] = opD->regularize * temp; // This adds a minor smoothing to the descent
         }
     }
 
     // MATH: zDbar = zDbuff - sigD*zDbar
     for (int i = 0; i < opD->zDbar.N; i++) {
-        opD->zDbar.vals[i] = opD->zDbuff.vals[i] - opD->regularize * opD->sigD*opD->zDbar.vals[i];
+        opD->zDbar.vals[i] = opD->zDbuff.vals[i] - opD->sigD*opD->zDbar.vals[i];
     }
 
     // MATH: zD = rr*zDbar + (1-rr)*zD

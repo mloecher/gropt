@@ -64,7 +64,7 @@ void cvx_optimize_kernel(cvx_mat *G, cvxop_gradient *opG, cvxop_slewrate *opD,
                          double *ddebug, int N_converge, double stop_increase,
                          int diffmode, double search_bval)
 {    
-    int max_iter = 60000;
+    int max_iter = 30000;
     int check_amount = 100;
     int i_check = 0;
     int N_backlog = max_iter / check_amount;
@@ -330,6 +330,8 @@ void cvx_optimize_kernel(cvx_mat *G, cvxop_gradient *opG, cvxop_slewrate *opD,
                 if (verbose > 0) {
                     printf("\n\n !-!-!-!-!-!-! Converged to an inadequate waveform, reweighting !-!-!-!-!-!-! \n");
                 } 
+
+                // cvxop_slewrate_reweight(opD, 2.0);
 
                 if (bad_moments > 0) {
                     cvxop_moments_reweight(opQ, 1.0 + bval_reduction);

@@ -151,7 +151,7 @@ def get_stim(G, dt):
     alpha = 0.333
     r = 23.4
     c = 334e-6
-    Smin = r/alpha
+    Smin = 60
     coeff = []
     for i in range(G.size):
         coeff.append( c / ((c + dt*(G.size-1) - dt*i)**2.0) / Smin )
@@ -375,3 +375,128 @@ def plot_waveform(G, params, plot_moments = True, plot_eddy = True, plot_pns = T
             i_row += 1
 
     plt.tight_layout(w_pad=0.0, rect=[0, 0.03, 1, 0.95])
+
+def conventional_flowcomp(params):
+    
+    G_ss = np.concatenate((np.linspace(params['g_ss']*1e-3,params['g_ss']*1e-3,int(ceil(params['p_ss']*1e-3/params['dt']))),np.linspace(params['g_ss']*1e-3,params['g_ss']*1e-3/10,10)),axis=0)
+    t_ss = G_ss.size*params['dt']
+    mmt = get_moment_plots(G_ss, 0, params['dt'], 0)
+    M0S = mmt[0][-1]*1e6
+    M1S = mmt[1][-1]*1e9
+    M2S = mmt[2][-1]*1e12
+    
+    ramp_range = np.linspace(0.01,0.5,491)
+    for r in ramp_range:
+        params['h'] = r*params['smax']
+        M02 = (-params['h']*r+np.sqrt((params['h']*r)**2+2*(params['h']*r*M0S + M0S**2 + 2*params['h']*M1S)))/2
+        M01 = M02 + M0S
+        w1 = M01/params['h'] + r
+        w2 = M02/params['h'] + r
+        r_ = int(ceil(r/params['dt']/1000))
+        w1_ = int(ceil(w1/params['dt']/1000))
+        w2_ = int(ceil(w2/params['dt']/1000))
+        
+        if  (w1_ - 2*r_) == 0 or (w2_ - 2*r_) == 0:
+            break
+        
+    G = np.concatenate((np.linspace(0,-params['h'],r_),np.linspace(-params['h'],-params['h'],w1_-2*r_),np.linspace(-params['h'],params['h'],2*r_),np.linspace(params['h'],params['h'],w2_-2*r_),np.linspace(params['h'],0,r_)),axis=0)
+    FC = np.concatenate((G_ss*1000,G),axis=0)
+    
+    return FC, M0S, M1S, M2S, t_ss, G_ss
+
+def conventional_flowencode(params):
+
+    GAM = 2*np.pi*42.57         # 1/(s*T)
+    DeltaM1 = np.pi/(GAM*params['VENC'])  # mT/m * ms^2
+
+    ramp_range = np.linspace(0.01,0.5,491)
+    for r in ramp_range:
+        params['h'] = r*params['smax']
+        M02 = (-params['h']*r+np.sqrt((params['h']*r)**2+2*(params['h']*r*params['M0S'] + params['M0S']**2 + 2*params['h']*(params['M1S']+DeltaM1))))/2 
+        M01 = params['M0S'] + M02 
+        w1 = M01/params['h'] + r 
+        w2 = M02/params['h'] + r 
+        r_ = int(ceil(r/params['dt']/1000))
+        w1_ = int(ceil(w1/params['dt']/1000))
+        w2_ = int(ceil(w2/params['dt']/1000))
+        
+        if  (w1_ == 2*r_) or (w2_ == 2*r_):
+            break
+        
+    G = np.concatenate((np.linspace(0,-params['h'],r_),np.linspace(-params['h'],-params['h'],w1_-2*r_),np.linspace(-params['h'],0,r_),np.linspace(params['h']/r_,params['h'],r_-1),np.linspace(params['h'],params['h'],w2_-2*r_),np.linspace(params['h'],0,r_)),axis=0)
+    FE = np.concatenate((params['G_ss']*1000,G),axis=0)
+    
+    return FE, DeltaM1
+
+def monopolar_diffusion(params):
+    
+    h = params['gmax']/1000
+    SR_Max = params['smax']/1000
+    GAM = 2*np.pi*42.58e3
+    zeta = (h/SR_Max)*1e-3
+    Delta = (zeta**2/12 + (GAM**2*params['T_180']*h**2 - GAM**2*params['T_90']*h**2 + GAM**2*params['T_readout']*h**2 + GAM**2*h**2*zeta)**2/(4*GAM**4*h**4))/((- (zeta**2/12 + (GAM**2*params['T_180']*h**2 - GAM**2*params['T_90']*h**2 + GAM**2*params['T_readout']*h**2 + GAM**2*h**2*zeta)**2/(4*GAM**4*h**4))**3 + ((GAM**2*params['T_180']*h**2 - GAM**2*params['T_90']*h**2 + GAM**2*params['T_readout']*h**2 + GAM**2*h**2*zeta)**3/(8*GAM**6*h**6) - (- 3*params['b'] - GAM**2*params['T_90']**3*h**2 + GAM**2*params['T_180']**3*h**2 + GAM**2*params['T_readout']**3*h**2 + (8*GAM**2*h**2*zeta**3)/5 - 3*GAM**2*params['T_90']*params['T_180']**2*h**2 + 3*GAM**2*params['T_90']**2*params['T_180']*h**2 - 3*GAM**2*params['T_90']*params['T_readout']**2*h**2 + 3*GAM**2*params['T_90']**2*params['T_readout']*h**2 + 3*GAM**2*params['T_180']*params['T_readout']**2*h**2 + 3*GAM**2*params['T_180']**2*params['T_readout']*h**2 - (7*GAM**2*params['T_90']*h**2*zeta**2)/2 + 3*GAM**2*params['T_90']**2*h**2*zeta + (7*GAM**2*params['T_180']*h**2*zeta**2)/2 + 3*GAM**2*params['T_180']**2*h**2*zeta + (7*GAM**2*params['T_readout']*h**2*zeta**2)/2 + 3*GAM**2*params['T_readout']**2*h**2*zeta - 6*GAM**2*params['T_90']*params['T_180']*params['T_readout']*h**2 - 6*GAM**2*params['T_90']*params['T_180']*h**2*zeta - 6*GAM**2*params['T_90']*params['T_readout']*h**2*zeta + 6*GAM**2*params['T_180']*params['T_readout']*h**2*zeta)/(4*GAM**2*h**2) + (zeta**2*(GAM**2*params['T_180']*h**2 - GAM**2*params['T_90']*h**2 + GAM**2*params['T_readout']*h**2 + GAM**2*h**2*zeta))/(16*GAM**2*h**2))**2)**(1/2) + (GAM**2*params['T_180']*h**2 - GAM**2*params['T_90']*h**2 + GAM**2*params['T_readout']*h**2 + GAM**2*h**2*zeta)**3/(8*GAM**6*h**6) - (- 3*params['b'] - GAM**2*params['T_90']**3*h**2 + GAM**2*params['T_180']**3*h**2 + GAM**2*params['T_readout']**3*h**2 + (8*GAM**2*h**2*zeta**3)/5 - 3*GAM**2*params['T_90']*params['T_180']**2*h**2 + 3*GAM**2*params['T_90']**2*params['T_180']*h**2 - 3*GAM**2*params['T_90']*params['T_readout']**2*h**2 + 3*GAM**2*params['T_90']**2*params['T_readout']*h**2 + 3*GAM**2*params['T_180']*params['T_readout']**2*h**2 + 3*GAM**2*params['T_180']**2*params['T_readout']*h**2 - (7*GAM**2*params['T_90']*h**2*zeta**2)/2 + 3*GAM**2*params['T_90']**2*h**2*zeta + (7*GAM**2*params['T_180']*h**2*zeta**2)/2 + 3*GAM**2*params['T_180']**2*h**2*zeta + (7*GAM**2*params['T_readout']*h**2*zeta**2)/2 + 3*GAM**2*params['T_readout']**2*h**2*zeta - 6*GAM**2*params['T_90']*params['T_180']*params['T_readout']*h**2 - 6*GAM**2*params['T_90']*params['T_180']*h**2*zeta - 6*GAM**2*params['T_90']*params['T_readout']*h**2*zeta + 6*GAM**2*params['T_180']*params['T_readout']*h**2*zeta)/(4*GAM**2*h**2) + (zeta**2*(GAM**2*params['T_180']*h**2 - GAM**2*params['T_90']*h**2 + GAM**2*params['T_readout']*h**2 + GAM**2*h**2*zeta))/(16*GAM**2*h**2))**(1/3) + ((((GAM**2*params['T_180']*h**2 - GAM**2*params['T_90']*h**2 + GAM**2*params['T_readout']*h**2 + GAM**2*h**2*zeta)**3/(8*GAM**6*h**6) - (3*(- (GAM**2*params['T_90']**3*h**2)/3 + GAM**2*params['T_90']**2*params['T_180']*h**2 + GAM**2*params['T_90']**2*params['T_readout']*h**2 + GAM**2*params['T_90']**2*h**2*zeta - GAM**2*params['T_90']*params['T_180']**2*h**2 - 2*GAM**2*params['T_90']*params['T_180']*params['T_readout']*h**2 - 2*GAM**2*params['T_90']*params['T_180']*h**2*zeta - GAM**2*params['T_90']*params['T_readout']**2*h**2 - 2*GAM**2*params['T_90']*params['T_readout']*h**2*zeta - (7*GAM**2*params['T_90']*h**2*zeta**2)/6 + (GAM**2*params['T_180']**3*h**2)/3 + GAM**2*params['T_180']**2*params['T_readout']*h**2 + GAM**2*params['T_180']**2*h**2*zeta + GAM**2*params['T_180']*params['T_readout']**2*h**2 + 2*GAM**2*params['T_180']*params['T_readout']*h**2*zeta + (7*GAM**2*params['T_180']*h**2*zeta**2)/6 + (GAM**2*params['T_readout']**3*h**2)/3 + GAM**2*params['T_readout']**2*h**2*zeta + (7*GAM**2*params['T_readout']*h**2*zeta**2)/6 + (8*GAM**2*h**2*zeta**3)/15 - params['b']))/(4*GAM**2*h**2) + (zeta**2*(GAM**2*params['T_180']*h**2 - GAM**2*params['T_90']*h**2 + GAM**2*params['T_readout']*h**2 + GAM**2*h**2*zeta))/(16*GAM**2*h**2))**2 - (zeta**2/12 + (GAM**2*params['T_180']*h**2 - GAM**2*params['T_90']*h**2 + GAM**2*params['T_readout']*h**2 + GAM**2*h**2*zeta)**2/(4*GAM**4*h**4))**3)**(1/2) + (GAM**2*params['T_180']*h**2 - GAM**2*params['T_90']*h**2 + GAM**2*params['T_readout']*h**2 + GAM**2*h**2*zeta)**3/(8*GAM**6*h**6) - (3*(- (GAM**2*params['T_90']**3*h**2)/3 + GAM**2*params['T_90']**2*params['T_180']*h**2 + GAM**2*params['T_90']**2*params['T_readout']*h**2 + GAM**2*params['T_90']**2*h**2*zeta - GAM**2*params['T_90']*params['T_180']**2*h**2 - 2*GAM**2*params['T_90']*params['T_180']*params['T_readout']*h**2 - 2*GAM**2*params['T_90']*params['T_180']*h**2*zeta - GAM**2*params['T_90']*params['T_readout']**2*h**2 - 2*GAM**2*params['T_90']*params['T_readout']*h**2*zeta - (7*GAM**2*params['T_90']*h**2*zeta**2)/6 + (GAM**2*params['T_180']**3*h**2)/3 + GAM**2*params['T_180']**2*params['T_readout']*h**2 + GAM**2*params['T_180']**2*h**2*zeta + GAM**2*params['T_180']*params['T_readout']**2*h**2 + 2*GAM**2*params['T_180']*params['T_readout']*h**2*zeta + (7*GAM**2*params['T_180']*h**2*zeta**2)/6 + (GAM**2*params['T_readout']**3*h**2)/3 + GAM**2*params['T_readout']**2*h**2*zeta + (7*GAM**2*params['T_readout']*h**2*zeta**2)/6 + (8*GAM**2*h**2*zeta**3)/15 - params['b']))/(4*GAM**2*h**2) + (zeta**2*(GAM**2*params['T_180']*h**2 - GAM**2*params['T_90']*h**2 + GAM**2*params['T_readout']*h**2 + GAM**2*h**2*zeta))/(16*GAM**2*h**2))**(1/3) + (GAM**2*params['T_180']*h**2 - GAM**2*params['T_90']*h**2 + GAM**2*params['T_readout']*h**2 + GAM**2*h**2*zeta)/(2*GAM**2*h**2)
+    delta = Delta + params['T_90'] - params['T_180'] - params['T_readout'] - zeta
+    b = GAM**2*h**2*(delta**2*(Delta-delta/3) + zeta**3/30 - delta*zeta**2/6)
+    T_90_ = int(ceil(params['T_90']/params['dt']))
+    zeta_ = int(np.floor(zeta/params['dt']))
+    delta_ = int(ceil((delta-2*zeta)/params['dt']))
+    Delta_ = int(ceil((Delta-zeta-delta+params['T_180']/2)/params['dt']))
+    Mono = np.concatenate((np.linspace(0,0,T_90_),
+                           np.linspace(0,h,zeta_),np.linspace(h,h,delta_),np.linspace(h,0,zeta_),
+                           np.linspace(0,0,Delta_),
+                           np.linspace(0,h,zeta_),np.linspace(h,h,delta_),np.linspace(h,0,zeta_)))
+    TE = Mono.size*params['dt']*1e3
+
+    return Mono, TE, b
+
+
+def bipolar_diffusion(params):
+    
+    h = params['gmax']/1000
+    SR_Max = params['smax']/1000
+    GAM = 2*np.pi*42.58e3
+    zeta = (h/SR_Max)*1e-3
+    delta = (((9*(params['b'] - (GAM**2*h**2*zeta**3)/15)**2)/(64*GAM**4*h**4) - zeta**6/1728)**(1/2) + (3*(params['b'] - (GAM**2*h**2*zeta**3)/15))/(8*GAM**2*h**2))**(1/3) + zeta**2/(12*(((9*(params['b'] - (GAM**2*h**2*zeta**3)/15)**2)/(64*GAM**4*h**4) - zeta**6/1728)**(1/2) + (3*params['b'] - (GAM**2*h**2*zeta**3)/5)/(8*GAM**2*h**2))**(1/3))
+    b = (GAM**2*h**2*(20*delta**3 - 5*delta*zeta**2 + zeta**3))/15
+    T_90_ = int(ceil(params['T_90']/params['dt']))
+    T_180_ = int(ceil(params['T_180']/params['dt']))
+    zeta_ = int(np.floor(zeta/params['dt']))
+    delta_ = int(ceil((delta-2*zeta)/params['dt']))
+    gap = int(ceil((params['T_readout']-0.5*params['T_90'])/params['dt']))
+    Bipolar = np.concatenate((np.linspace(0,0,T_90_),
+                              np.linspace(0,h,zeta_),np.linspace(h,h,delta_),np.linspace(h,0,zeta_),
+                              np.linspace(0,-h,zeta_),np.linspace(-h,-h,delta_),np.linspace(-h,0,zeta_),
+                              np.linspace(0,0,gap),
+                              np.linspace(0,0,T_180_),
+                              np.linspace(0,h,zeta_),np.linspace(h,h,delta_),np.linspace(h,0,zeta_),
+                              np.linspace(0,-h,zeta_),np.linspace(-h,-h,delta_),np.linspace(-h,0,zeta_)))
+    TE = Bipolar.size*params['dt']*1e3
+    
+    return Bipolar, TE, b
+
+def asymmbipolar_diffusion(params):
+    
+    h = params['gmax']/1000
+    SR_Max = params['smax']/1000
+    GAM = 2*np.pi*42.58e3
+    zeta = (h/SR_Max)*1e-3
+    # *** I cannot solve the math in Pyhton, but have it in Matlab *** 
+    delta1 = 0.0135
+    delta2 = 0.0210
+    Delta = 0.0733
+    b = (GAM**2*h**2*(20*Delta**3*delta1**3 - 30*Delta**3*delta1**2*zeta - 5*Delta**3*delta1*zeta**2 + 16*Delta**3*zeta**3 - 60*Delta**2*delta1**4 + 120*Delta**2*delta1**3*zeta - 5*Delta**2*delta1**2*zeta**2 - 106*Delta**2*delta1*zeta**3 + 48*Delta**2*zeta**4 - 100*Delta*delta1**3*zeta**2 + 252*Delta*delta1**2*zeta**3 - 197*Delta*delta1*zeta**4 + 48*Delta*zeta**5 + 40*delta1**6 - 120*delta1**5*zeta + 200*delta1**4*zeta**2 - 268*delta1**3*zeta**3 + 227*delta1**2*zeta**4 - 96*delta1*zeta**5 + 16*zeta**6))/(15*(Delta - 2*delta1 + zeta)**3)
+    T_90_ = int(ceil(params['T_90']/params['dt']))
+    T_180_ = int(ceil(params['T_180']/params['dt']))
+    zeta_ = int(np.floor(zeta/params['dt']))
+    delta1_ = int(ceil((delta1-2*zeta)/params['dt']))
+    delta2_ = int(ceil((delta2-2*zeta)/params['dt']))
+    gap = int(ceil((Delta-delta1-delta2)/params['dt']))
+    AsymmBipolar = np.concatenate((np.linspace(0,0,T_90_),
+                                   np.linspace(0,-h,zeta_),np.linspace(-h,-h,delta1_),np.linspace(-h,0,zeta_),
+                                   np.linspace(0,h,zeta_),np.linspace(h,h,delta2_),np.linspace(h,0,zeta_),
+                                   np.linspace(0,0,gap),
+                                   np.linspace(0,h,zeta_),np.linspace(h,h,delta2_),np.linspace(h,0,zeta_),
+                                   np.linspace(0,-h,zeta_),np.linspace(-h,-h,delta1_),np.linspace(-h,0,zeta_)),axis=0)
+    TE = AsymmBipolar.size*params['dt']*1e3
+    
+    return AsymmBipolar, TE, b

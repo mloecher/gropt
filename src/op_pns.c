@@ -25,7 +25,7 @@ void cvxop_pns_init(cvxop_pns *opP, int N, double dt, int ind_inv, double thresh
     
 
     double c = 334.0e-6;
-    double Smin = 70.27027;
+    double Smin = 60;
     for (int i = 0; i < N; i++) {
         opP->coeff.vals[i] = c / pow((c + dt*(N-1) - dt*i), 2.0) / Smin;
     }
@@ -33,7 +33,7 @@ void cvxop_pns_init(cvxop_pns *opP, int N, double dt, int ind_inv, double thresh
     double coeff_max = opP->coeff.vals[N-1];
     int n_conv = 0;
     int ind_conv = N-1-n_conv;
-    while ( (ind_conv > 0) && ((opP->coeff.vals[ind_conv]/coeff_max) > .01) ) {
+    while ( (ind_conv > 0) && ((opP->coeff.vals[ind_conv]/coeff_max) > .005) ) {
         n_conv += 1;
         ind_conv = N-1-n_conv;
     }
