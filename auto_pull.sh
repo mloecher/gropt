@@ -12,5 +12,6 @@ else
 	echo changed
 	echo $LOCAL
 	echo $UPSTREAM
+	git pull
 fi
 
