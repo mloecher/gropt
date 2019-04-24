@@ -10,5 +10,7 @@ if [ $LOCAL = $UPSTREAM ]; then
 	echo $UPSTREAM
 else
 	echo changed
+	echo $LOCAL
+	echo $UPSTREAM
 fi
 
