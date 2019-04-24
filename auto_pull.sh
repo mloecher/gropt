@@ -14,7 +14,7 @@ else
 	echo $UPSTREAM
 	git pull
 	cd ./python/
-	python setup.py vuild_ext --inplace
+	python setup.py build_ext --inplace
 fi
 
 echo "done v1"
