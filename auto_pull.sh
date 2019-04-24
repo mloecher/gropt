@@ -17,5 +17,5 @@ else
 	python setup.py build_ext --inplace
 fi
 
-echo "done v1"
+echo "done v2"
 
