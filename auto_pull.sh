@@ -13,5 +13,7 @@ else
 	echo $LOCAL
 	echo $UPSTREAM
 	git pull
+	cd ./python/
+	python setup.py vuild_ext --inplace
 fi
 
