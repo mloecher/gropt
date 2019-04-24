@@ -17,3 +17,5 @@ else
 	python setup.py vuild_ext --inplace
 fi
 
+echo "done v1"
+
