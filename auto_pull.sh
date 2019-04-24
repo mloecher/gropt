@@ -8,6 +8,7 @@ if [ $LOCAL = $UPSTREAM ]; then
 	echo same
 	echo $LOCAL
 	echo $UPSTREAM
+    cd ./python/
 else
 	echo changed
 	echo $LOCAL
