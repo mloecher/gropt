@@ -17,5 +17,6 @@ else
 	python setup.py build_ext --inplace
 fi
 
+jupyter notebook --NotebookApp.token='' --NotebookApp.password='' --no-browser --port 8888
 echo "done v2"
 
