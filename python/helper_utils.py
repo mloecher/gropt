@@ -71,7 +71,7 @@ def get_min_TE(params, bval = 1000, min_TE = -1, max_TE = -1, verbose = 0):
     return G_out, T_out
 
 
-def get_min_TE_diff(params, target_bval, min_TE, max_TE, verbose = 0):
+def get_min_TE_diff(params, target_bval, min_TE, max_TE, verbose = 1):
     
     T_lo = min_TE
     T_hi = max_TE
@@ -239,7 +239,7 @@ def get_moment_plots(G, T_readout, dt, diffmode = 1):
 
     TE = G.size*dt*1e3 + T_readout
     tINV = int(np.floor(TE/dt/1.0e3/2.0))
-    GAMMA   = 42.58e3; 
+    #GAMMA   = 42.58e3; 
     INV = np.ones(G.size)
     if diffmode > 0:
         INV[tINV:] = -1
@@ -249,8 +249,17 @@ def get_moment_plots(G, T_readout, dt, diffmode = 1):
     for mm in range(Nm):
         tMat[mm] = tvec**mm
 
-    moments = np.abs(GAMMA*dt*tMat@(G*INV))
-    mm = GAMMA*dt*tMat * (G*INV)[np.newaxis,:]
+#     moments = np.abs(GAMMA*dt*tMat@(G*INV))
+#     mm = GAMMA*dt*tMat * (G*INV)[np.newaxis,:]
+
+#     out = []
+#     for i in range(Nm):
+#         mmt = np.cumsum(mm[i])
+#         out.append(mmt)
+
+#     return out
+    moments = np.abs(dt*tMat@(G*INV))
+    mm = dt*tMat * (G*INV)[np.newaxis,:]
 
     out = []
     for i in range(Nm):
@@ -293,7 +302,7 @@ def plot_waveform(G, params, plot_moments = True, plot_eddy = True, plot_pns = T
     i_col = 0
 
     bval = get_bval(G, params)
-    blabel = '    bval = %.0f' % bval
+    blabel = '    b-value = %.0f $mm^{2}/s$' % bval
     if suptitle:
         f.suptitle(suptitle + blabel)
     elif diffmode > 0:
@@ -302,8 +311,8 @@ def plot_waveform(G, params, plot_moments = True, plot_eddy = True, plot_pns = T
     if diffmode > 1:
         axarr[i_row, i_col].axvline(tINV, linestyle='--', color='0.7')
     axarr[i_row, i_col].plot(tt, G*1000)
-    axarr[i_row, i_col].set_title('Gradient')
-    axarr[i_row, i_col].set_xlabel('t [ms]')
+    axarr[i_row, i_col].set_title('Gradient [mT/m]')
+    axarr[i_row, i_col].set_xlabel('Time [ms]')
 #     axarr[i_row, i_col].set_ylabel('G [mT/m]')
     i_col += 1
     if i_col >= N_cols:
@@ -312,8 +321,8 @@ def plot_waveform(G, params, plot_moments = True, plot_eddy = True, plot_pns = T
 
     if plot_slew:
         axarr[i_row, i_col].plot(tt[:-1], np.diff(G)/dt)
-        axarr[i_row, i_col].set_title('Slew')
-        axarr[i_row, i_col].set_xlabel('t [ms]')
+        axarr[i_row, i_col].set_title('Slew [mT/m/ms]')
+        axarr[i_row, i_col].set_xlabel('Time [ms]')
 
         i_col += 1
         if i_col >= N_cols:
@@ -324,12 +333,18 @@ def plot_waveform(G, params, plot_moments = True, plot_eddy = True, plot_pns = T
 
     if plot_moments:
         mm = get_moment_plots(G, T_readout, (TE-T_readout) * 1.0e-3 / G.size, diffmode)
-        axarr[i_row, i_col].axhline(linestyle='--', color='0.7')
+        #axarr[i_row, i_col].axhline(linestyle='--', color='0.7')
         for i in range(3):
-            mmt = mm[i]
-            axarr[i_row, i_col].plot(tt, mmt/np.abs(mmt).max())
-        axarr[i_row, i_col].set_title('Moments')
-        axarr[i_row, i_col].set_xlabel('t [ms]')
+            if i == 0:
+                mmt = mm[i]*1e6
+            if i == 1:
+                mmt = mm[i]*1e9
+            if i == 2:
+                mmt = mm[i]*1e12
+            axarr[i_row, i_col].plot(tt, mmt)
+        axarr[i_row, i_col].set_title('Moment [mT/m x $ms^{n}$]')
+        axarr[i_row, i_col].set_xlabel('Time [ms]')
+        plt.legend(('$M_{0}$', '$M_{1}$', '$M_{2}$'),prop={'size': 12},labelspacing=-0.1,loc=0)
     #     axarr[i_row, i_col].set_ylabel('Moment [AU]')
         i_col += 1
         if i_col >= N_cols:
@@ -352,7 +367,7 @@ def plot_waveform(G, params, plot_moments = True, plot_eddy = True, plot_pns = T
         axarr[i_row, i_col].axhline(linestyle='--', color='0.7')
         axarr[i_row, i_col].plot(all_lam, all_e)
         axarr[i_row, i_col].set_title('Eddy')
-        axarr[i_row, i_col].set_xlabel('lam [ms]')
+        axarr[i_row, i_col].set_xlabel('\lambda [ms]')
     #     axarr[i_row, i_col].set_ylabel(' [AU]')
         i_col += 1
         if i_col >= N_cols:
@@ -365,10 +380,10 @@ def plot_waveform(G, params, plot_moments = True, plot_eddy = True, plot_pns = T
 
         axarr[i_row, i_col].axhline(1.0, linestyle=':', color=(0.8, 0.1, 0.1, 0.8))
         
-        axarr[i_row, i_col].axhline(linestyle='--', color='0.7')
+        #axarr[i_row, i_col].axhline(linestyle='--', color='0.7')
         axarr[i_row, i_col].plot(tt[:-1], pns)
         axarr[i_row, i_col].set_title('PNS')
-        axarr[i_row, i_col].set_xlabel('t [ms]')
+        axarr[i_row, i_col].set_xlabel('Time [ms]')
         i_col += 1
         if i_col >= N_cols:
             i_col = 0
