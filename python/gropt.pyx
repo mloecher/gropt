@@ -72,7 +72,7 @@ def gropt(params, verbose=0):
         return
 
     if 'gmax' in params:
-        gmax = params['gmax']
+        gmax = params['gmax']/1000
     else:
         print('ERROR: params does not contain key "gmax"')
         return

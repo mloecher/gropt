@@ -344,7 +344,7 @@ def plot_waveform(G, params, plot_moments = True, plot_eddy = True, plot_pns = T
             axarr[i_row, i_col].plot(tt, mmt)
         axarr[i_row, i_col].set_title('Moment [mT/m x $ms^{n}$]')
         axarr[i_row, i_col].set_xlabel('Time [ms]')
-        plt.legend(('$M_{0}$', '$M_{1}$', '$M_{2}$'),prop={'size': 12},labelspacing=-0.1,loc=0)
+        axarr[i_row, i_col].legend(('$M_{0}$', '$M_{1}$', '$M_{2}$'),prop={'size': 12},labelspacing=-0.1,loc=0)
     #     axarr[i_row, i_col].set_ylabel('Moment [AU]')
         i_col += 1
         if i_col >= N_cols:
