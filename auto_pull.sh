@@ -8,15 +8,16 @@ if [ $LOCAL = $UPSTREAM ]; then
 	echo same
 	echo $LOCAL
 	echo $UPSTREAM
+    	cd ./python/
 else
 	echo changed
 	echo $LOCAL
 	echo $UPSTREAM
 	git pull
 	cd ./python/
-	python setup.py build_ext --inplace
+	/home/ubuntu/anaconda3/bin/python setup.py build_ext --inplace
 fi
 
-jupyter notebook --NotebookApp.token='' --NotebookApp.password='' --no-browser --port 8888
+/home/ubuntu/anaconda3/bin/jupyter notebook --NotebookApp.token='' --NotebookApp.password='' --no-browser --port 8888
 echo "done v2"
 

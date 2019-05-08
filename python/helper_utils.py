@@ -188,7 +188,8 @@ def get_bval(G, params):
 
     TE = params['TE']
     T_readout = params['T_readout']
-    dt = (TE-T_readout) * 1.0e-3 / G.size
+    #dt = (TE-T_readout) * 1.0e-3 / G.size
+    dt = params['dt']
     
     tINV = int(np.floor(TE/dt/1.0e3/2.0))
     GAMMA   = 42.58e3; 
@@ -235,11 +236,11 @@ def plot_moments(G, T_readout, dt):
     plt.axhline(0, color='k')
 
 
-def get_moment_plots(G, T_readout, dt, diffmode = 1):
+def get_moment_plots(G, T_readout, dt, diffmode):
 
     TE = G.size*dt*1e3 + T_readout
     tINV = int(np.floor(TE/dt/1.0e3/2.0))
-    GAMMA   = 42.58e3; 
+    #GAMMA   = 42.58e3; 
     INV = np.ones(G.size)
     if diffmode > 0:
         INV[tINV:] = -1
@@ -249,8 +250,17 @@ def get_moment_plots(G, T_readout, dt, diffmode = 1):
     for mm in range(Nm):
         tMat[mm] = tvec**mm
 
-    moments = np.abs(GAMMA*dt*tMat@(G*INV))
-    mm = GAMMA*dt*tMat * (G*INV)[np.newaxis,:]
+#     moments = np.abs(GAMMA*dt*tMat@(G*INV))
+#     mm = GAMMA*dt*tMat * (G*INV)[np.newaxis,:]
+
+#     out = []
+#     for i in range(Nm):
+#         mmt = np.cumsum(mm[i])
+#         out.append(mmt)
+
+#     return out
+    moments = np.abs(dt*tMat@(G*INV))
+    mm = dt*tMat * (G*INV)[np.newaxis,:]
 
     out = []
     for i in range(Nm):
@@ -270,7 +280,8 @@ def plot_waveform(G, params, plot_moments = True, plot_eddy = True, plot_pns = T
     if params['mode'][:4] == 'diff':
         diffmode = 1
 
-    dt = (TE-T_readout) * 1.0e-3 / G.size
+    #dt = (TE-T_readout) * 1.0e-3 / G.size
+    dt = params['dt']
     tt = np.arange(G.size) * dt * 1e3
     tINV = TE/2.0
     
@@ -293,7 +304,7 @@ def plot_waveform(G, params, plot_moments = True, plot_eddy = True, plot_pns = T
     i_col = 0
 
     bval = get_bval(G, params)
-    blabel = '    bval = %.0f' % bval
+    blabel = '    b-value = %.0f $mm^{2}/s$' % bval
     if suptitle:
         f.suptitle(suptitle + blabel)
     elif diffmode > 0:
@@ -302,8 +313,8 @@ def plot_waveform(G, params, plot_moments = True, plot_eddy = True, plot_pns = T
     if diffmode > 1:
         axarr[i_row, i_col].axvline(tINV, linestyle='--', color='0.7')
     axarr[i_row, i_col].plot(tt, G*1000)
-    axarr[i_row, i_col].set_title('Gradient')
-    axarr[i_row, i_col].set_xlabel('t [ms]')
+    axarr[i_row, i_col].set_title('Gradient [mT/m]')
+    axarr[i_row, i_col].set_xlabel('Time [ms]')
 #     axarr[i_row, i_col].set_ylabel('G [mT/m]')
     i_col += 1
     if i_col >= N_cols:
@@ -312,8 +323,8 @@ def plot_waveform(G, params, plot_moments = True, plot_eddy = True, plot_pns = T
 
     if plot_slew:
         axarr[i_row, i_col].plot(tt[:-1], np.diff(G)/dt)
-        axarr[i_row, i_col].set_title('Slew')
-        axarr[i_row, i_col].set_xlabel('t [ms]')
+        axarr[i_row, i_col].set_title('Slew [mT/m/ms]')
+        axarr[i_row, i_col].set_xlabel('Time [ms]')
 
         i_col += 1
         if i_col >= N_cols:
@@ -323,13 +334,24 @@ def plot_waveform(G, params, plot_moments = True, plot_eddy = True, plot_pns = T
 
 
     if plot_moments:
-        mm = get_moment_plots(G, T_readout, (TE-T_readout) * 1.0e-3 / G.size, diffmode)
-        axarr[i_row, i_col].axhline(linestyle='--', color='0.7')
+        mm = get_moment_plots(G, T_readout, dt, diffmode)
+        #axarr[i_row, i_col].axhline(linestyle='--', color='0.7')
         for i in range(3):
-            mmt = mm[i]
-            axarr[i_row, i_col].plot(tt, mmt/np.abs(mmt).max())
-        axarr[i_row, i_col].set_title('Moments')
-        axarr[i_row, i_col].set_xlabel('t [ms]')
+            if diffmode == 1:
+                mmt = mm[i]/np.abs(mm[i]).max()
+            if diffmode == 0:    
+                if i == 0:
+                    mmt = mm[i]*1e6
+                if i == 1:
+                    mmt = mm[i]*1e9
+                if i == 2:
+                    mmt = mm[i]*1e12
+            axarr[i_row, i_col].plot(tt, mmt)
+        axarr[i_row, i_col].set_title('Moment [mT/m x $ms^{n}$]')
+        if diffmode == 1:
+            axarr[i_row, i_col].set_title('Moment [A.U.]')            
+        axarr[i_row, i_col].set_xlabel('Time [ms]')
+        axarr[i_row, i_col].legend(('$M_{0}$', '$M_{1}$', '$M_{2}$'),prop={'size': 12},labelspacing=-0.1,loc=0)
     #     axarr[i_row, i_col].set_ylabel('Moment [AU]')
         i_col += 1
         if i_col >= N_cols:
@@ -352,7 +374,7 @@ def plot_waveform(G, params, plot_moments = True, plot_eddy = True, plot_pns = T
         axarr[i_row, i_col].axhline(linestyle='--', color='0.7')
         axarr[i_row, i_col].plot(all_lam, all_e)
         axarr[i_row, i_col].set_title('Eddy')
-        axarr[i_row, i_col].set_xlabel('lam [ms]')
+        axarr[i_row, i_col].set_xlabel('\lambda [ms]')
     #     axarr[i_row, i_col].set_ylabel(' [AU]')
         i_col += 1
         if i_col >= N_cols:
@@ -365,10 +387,10 @@ def plot_waveform(G, params, plot_moments = True, plot_eddy = True, plot_pns = T
 
         axarr[i_row, i_col].axhline(1.0, linestyle=':', color=(0.8, 0.1, 0.1, 0.8))
         
-        axarr[i_row, i_col].axhline(linestyle='--', color='0.7')
+        #axarr[i_row, i_col].axhline(linestyle='--', color='0.7')
         axarr[i_row, i_col].plot(tt[:-1], pns)
         axarr[i_row, i_col].set_title('PNS')
-        axarr[i_row, i_col].set_xlabel('t [ms]')
+        axarr[i_row, i_col].set_xlabel('Time [ms]')
         i_col += 1
         if i_col >= N_cols:
             i_col = 0
@@ -430,6 +452,10 @@ def conventional_flowencode(params):
 
 def monopolar_diffusion(params):
     
+    params['dt'] = 1e-5
+    params['T_90'] = params['T_90']*1e-3
+    params['T_180'] = params['T_180']*1e-3
+    params['T_readout'] = params['T_readout']*1e-3
     h = params['gmax']/1000
     SR_Max = params['smax']/1000
     GAM = 2*np.pi*42.58e3
@@ -437,32 +463,49 @@ def monopolar_diffusion(params):
     Delta = (zeta**2/12 + (GAM**2*params['T_180']*h**2 - GAM**2*params['T_90']*h**2 + GAM**2*params['T_readout']*h**2 + GAM**2*h**2*zeta)**2/(4*GAM**4*h**4))/((- (zeta**2/12 + (GAM**2*params['T_180']*h**2 - GAM**2*params['T_90']*h**2 + GAM**2*params['T_readout']*h**2 + GAM**2*h**2*zeta)**2/(4*GAM**4*h**4))**3 + ((GAM**2*params['T_180']*h**2 - GAM**2*params['T_90']*h**2 + GAM**2*params['T_readout']*h**2 + GAM**2*h**2*zeta)**3/(8*GAM**6*h**6) - (- 3*params['b'] - GAM**2*params['T_90']**3*h**2 + GAM**2*params['T_180']**3*h**2 + GAM**2*params['T_readout']**3*h**2 + (8*GAM**2*h**2*zeta**3)/5 - 3*GAM**2*params['T_90']*params['T_180']**2*h**2 + 3*GAM**2*params['T_90']**2*params['T_180']*h**2 - 3*GAM**2*params['T_90']*params['T_readout']**2*h**2 + 3*GAM**2*params['T_90']**2*params['T_readout']*h**2 + 3*GAM**2*params['T_180']*params['T_readout']**2*h**2 + 3*GAM**2*params['T_180']**2*params['T_readout']*h**2 - (7*GAM**2*params['T_90']*h**2*zeta**2)/2 + 3*GAM**2*params['T_90']**2*h**2*zeta + (7*GAM**2*params['T_180']*h**2*zeta**2)/2 + 3*GAM**2*params['T_180']**2*h**2*zeta + (7*GAM**2*params['T_readout']*h**2*zeta**2)/2 + 3*GAM**2*params['T_readout']**2*h**2*zeta - 6*GAM**2*params['T_90']*params['T_180']*params['T_readout']*h**2 - 6*GAM**2*params['T_90']*params['T_180']*h**2*zeta - 6*GAM**2*params['T_90']*params['T_readout']*h**2*zeta + 6*GAM**2*params['T_180']*params['T_readout']*h**2*zeta)/(4*GAM**2*h**2) + (zeta**2*(GAM**2*params['T_180']*h**2 - GAM**2*params['T_90']*h**2 + GAM**2*params['T_readout']*h**2 + GAM**2*h**2*zeta))/(16*GAM**2*h**2))**2)**(1/2) + (GAM**2*params['T_180']*h**2 - GAM**2*params['T_90']*h**2 + GAM**2*params['T_readout']*h**2 + GAM**2*h**2*zeta)**3/(8*GAM**6*h**6) - (- 3*params['b'] - GAM**2*params['T_90']**3*h**2 + GAM**2*params['T_180']**3*h**2 + GAM**2*params['T_readout']**3*h**2 + (8*GAM**2*h**2*zeta**3)/5 - 3*GAM**2*params['T_90']*params['T_180']**2*h**2 + 3*GAM**2*params['T_90']**2*params['T_180']*h**2 - 3*GAM**2*params['T_90']*params['T_readout']**2*h**2 + 3*GAM**2*params['T_90']**2*params['T_readout']*h**2 + 3*GAM**2*params['T_180']*params['T_readout']**2*h**2 + 3*GAM**2*params['T_180']**2*params['T_readout']*h**2 - (7*GAM**2*params['T_90']*h**2*zeta**2)/2 + 3*GAM**2*params['T_90']**2*h**2*zeta + (7*GAM**2*params['T_180']*h**2*zeta**2)/2 + 3*GAM**2*params['T_180']**2*h**2*zeta + (7*GAM**2*params['T_readout']*h**2*zeta**2)/2 + 3*GAM**2*params['T_readout']**2*h**2*zeta - 6*GAM**2*params['T_90']*params['T_180']*params['T_readout']*h**2 - 6*GAM**2*params['T_90']*params['T_180']*h**2*zeta - 6*GAM**2*params['T_90']*params['T_readout']*h**2*zeta + 6*GAM**2*params['T_180']*params['T_readout']*h**2*zeta)/(4*GAM**2*h**2) + (zeta**2*(GAM**2*params['T_180']*h**2 - GAM**2*params['T_90']*h**2 + GAM**2*params['T_readout']*h**2 + GAM**2*h**2*zeta))/(16*GAM**2*h**2))**(1/3) + ((((GAM**2*params['T_180']*h**2 - GAM**2*params['T_90']*h**2 + GAM**2*params['T_readout']*h**2 + GAM**2*h**2*zeta)**3/(8*GAM**6*h**6) - (3*(- (GAM**2*params['T_90']**3*h**2)/3 + GAM**2*params['T_90']**2*params['T_180']*h**2 + GAM**2*params['T_90']**2*params['T_readout']*h**2 + GAM**2*params['T_90']**2*h**2*zeta - GAM**2*params['T_90']*params['T_180']**2*h**2 - 2*GAM**2*params['T_90']*params['T_180']*params['T_readout']*h**2 - 2*GAM**2*params['T_90']*params['T_180']*h**2*zeta - GAM**2*params['T_90']*params['T_readout']**2*h**2 - 2*GAM**2*params['T_90']*params['T_readout']*h**2*zeta - (7*GAM**2*params['T_90']*h**2*zeta**2)/6 + (GAM**2*params['T_180']**3*h**2)/3 + GAM**2*params['T_180']**2*params['T_readout']*h**2 + GAM**2*params['T_180']**2*h**2*zeta + GAM**2*params['T_180']*params['T_readout']**2*h**2 + 2*GAM**2*params['T_180']*params['T_readout']*h**2*zeta + (7*GAM**2*params['T_180']*h**2*zeta**2)/6 + (GAM**2*params['T_readout']**3*h**2)/3 + GAM**2*params['T_readout']**2*h**2*zeta + (7*GAM**2*params['T_readout']*h**2*zeta**2)/6 + (8*GAM**2*h**2*zeta**3)/15 - params['b']))/(4*GAM**2*h**2) + (zeta**2*(GAM**2*params['T_180']*h**2 - GAM**2*params['T_90']*h**2 + GAM**2*params['T_readout']*h**2 + GAM**2*h**2*zeta))/(16*GAM**2*h**2))**2 - (zeta**2/12 + (GAM**2*params['T_180']*h**2 - GAM**2*params['T_90']*h**2 + GAM**2*params['T_readout']*h**2 + GAM**2*h**2*zeta)**2/(4*GAM**4*h**4))**3)**(1/2) + (GAM**2*params['T_180']*h**2 - GAM**2*params['T_90']*h**2 + GAM**2*params['T_readout']*h**2 + GAM**2*h**2*zeta)**3/(8*GAM**6*h**6) - (3*(- (GAM**2*params['T_90']**3*h**2)/3 + GAM**2*params['T_90']**2*params['T_180']*h**2 + GAM**2*params['T_90']**2*params['T_readout']*h**2 + GAM**2*params['T_90']**2*h**2*zeta - GAM**2*params['T_90']*params['T_180']**2*h**2 - 2*GAM**2*params['T_90']*params['T_180']*params['T_readout']*h**2 - 2*GAM**2*params['T_90']*params['T_180']*h**2*zeta - GAM**2*params['T_90']*params['T_readout']**2*h**2 - 2*GAM**2*params['T_90']*params['T_readout']*h**2*zeta - (7*GAM**2*params['T_90']*h**2*zeta**2)/6 + (GAM**2*params['T_180']**3*h**2)/3 + GAM**2*params['T_180']**2*params['T_readout']*h**2 + GAM**2*params['T_180']**2*h**2*zeta + GAM**2*params['T_180']*params['T_readout']**2*h**2 + 2*GAM**2*params['T_180']*params['T_readout']*h**2*zeta + (7*GAM**2*params['T_180']*h**2*zeta**2)/6 + (GAM**2*params['T_readout']**3*h**2)/3 + GAM**2*params['T_readout']**2*h**2*zeta + (7*GAM**2*params['T_readout']*h**2*zeta**2)/6 + (8*GAM**2*h**2*zeta**3)/15 - params['b']))/(4*GAM**2*h**2) + (zeta**2*(GAM**2*params['T_180']*h**2 - GAM**2*params['T_90']*h**2 + GAM**2*params['T_readout']*h**2 + GAM**2*h**2*zeta))/(16*GAM**2*h**2))**(1/3) + (GAM**2*params['T_180']*h**2 - GAM**2*params['T_90']*h**2 + GAM**2*params['T_readout']*h**2 + GAM**2*h**2*zeta)/(2*GAM**2*h**2)
     delta = Delta + params['T_90'] - params['T_180'] - params['T_readout'] - zeta
     b = GAM**2*h**2*(delta**2*(Delta-delta/3) + zeta**3/30 - delta*zeta**2/6)
-    T_90_ = int(ceil(params['T_90']/params['dt']))
-    zeta_ = int(np.floor(zeta/params['dt']))
-    delta_ = int(ceil((delta-2*zeta)/params['dt']))
-    Delta_ = int(ceil((Delta-zeta-delta+params['T_180']/2)/params['dt']))
+#     T_90_ = int(ceil(params['T_90']/params['dt']))
+#     zeta_ = int(np.floor(zeta/params['dt']))
+#     delta_ = int(ceil((delta-2*zeta)/params['dt']))
+#     Delta_ = int(ceil((Delta-zeta-delta+params['T_180']/2)/params['dt']))
+#     Mono = np.concatenate((np.linspace(0,0,T_90_),
+#                            np.linspace(0,h,zeta_),np.linspace(h,h,delta_),np.linspace(h,0,zeta_),
+#                            np.linspace(0,0,Delta_),
+#                            np.linspace(0,h,zeta_),np.linspace(h,h,delta_),np.linspace(h,0,zeta_)))
+    T_90_ = int(1e5*params['T_90'])
+    zeta_ = int(1e5*zeta)
+    delta_ = int(1e5*(delta-2*zeta))
+    Delta_ = int(1e5*(Delta-zeta-delta+params['T_180']/2))
     Mono = np.concatenate((np.linspace(0,0,T_90_),
                            np.linspace(0,h,zeta_),np.linspace(h,h,delta_),np.linspace(h,0,zeta_),
                            np.linspace(0,0,Delta_),
                            np.linspace(0,h,zeta_),np.linspace(h,h,delta_),np.linspace(h,0,zeta_)))
-    TE = Mono.size*params['dt']*1e3
+    TE = Mono.size
 
-    return Mono, TE, b
-
+    return Mono, TE, b, params
 
 def bipolar_diffusion(params):
     
+    params['dt'] = 1e-5
+    params['T_90'] = params['T_90']*1e-3
+    params['T_180'] = params['T_180']*1e-3
+    params['T_readout'] = params['T_readout']*1e-3
     h = params['gmax']/1000
     SR_Max = params['smax']/1000
     GAM = 2*np.pi*42.58e3
     zeta = (h/SR_Max)*1e-3
     delta = (((9*(params['b'] - (GAM**2*h**2*zeta**3)/15)**2)/(64*GAM**4*h**4) - zeta**6/1728)**(1/2) + (3*(params['b'] - (GAM**2*h**2*zeta**3)/15))/(8*GAM**2*h**2))**(1/3) + zeta**2/(12*(((9*(params['b'] - (GAM**2*h**2*zeta**3)/15)**2)/(64*GAM**4*h**4) - zeta**6/1728)**(1/2) + (3*params['b'] - (GAM**2*h**2*zeta**3)/5)/(8*GAM**2*h**2))**(1/3))
     b = (GAM**2*h**2*(20*delta**3 - 5*delta*zeta**2 + zeta**3))/15
-    T_90_ = int(ceil(params['T_90']/params['dt']))
-    T_180_ = int(ceil(params['T_180']/params['dt']))
-    zeta_ = int(np.floor(zeta/params['dt']))
-    delta_ = int(ceil((delta-2*zeta)/params['dt']))
-    gap = int(ceil((params['T_readout']-0.5*params['T_90'])/params['dt']))
+#     T_90_ = int(ceil(params['T_90']/params['dt']))
+#     T_180_ = int(ceil(params['T_180']/params['dt']))
+#     zeta_ = int(np.floor(zeta/params['dt']))
+#     delta_ = int(ceil((delta-2*zeta)/params['dt']))
+#     gap = int(ceil((params['T_readout']-0.5*params['T_90'])/params['dt']))
+    T_90_ = int(1e5*params['T_90'])
+    T_180_ = int(1e5*params['T_180'])
+    T_readout_ = int(1e5*params['T_readout'])
+    zeta_ = int(1e5*zeta)
+    delta_ = int(1e5*(delta-2*zeta))
+    gap = T_readout_ - 0.5*T_90_
     Bipolar = np.concatenate((np.linspace(0,0,T_90_),
                               np.linspace(0,h,zeta_),np.linspace(h,h,delta_),np.linspace(h,0,zeta_),
                               np.linspace(0,-h,zeta_),np.linspace(-h,-h,delta_),np.linspace(-h,0,zeta_),
@@ -470,33 +513,38 @@ def bipolar_diffusion(params):
                               np.linspace(0,0,T_180_),
                               np.linspace(0,h,zeta_),np.linspace(h,h,delta_),np.linspace(h,0,zeta_),
                               np.linspace(0,-h,zeta_),np.linspace(-h,-h,delta_),np.linspace(-h,0,zeta_)))
-    TE = Bipolar.size*params['dt']*1e3
+    TE = Bipolar.size
     
-    return Bipolar, TE, b
+    return Bipolar, TE, b, params
 
 def asymmbipolar_diffusion(params):
-    
+
+    params['dt'] = 1e-5
+    params['T_90'] = params['T_90']*1e-3
+    params['T_180'] = params['T_180']*1e-3
+    params['T_readout'] = params['T_readout']*1e-3   
     h = params['gmax']/1000
     SR_Max = params['smax']/1000
     GAM = 2*np.pi*42.58e3
     zeta = (h/SR_Max)*1e-3
-    # *** I cannot solve the math in Pyhton, but have it in Matlab *** 
+    # *** Fixed for now, need to solve the symbolic math equations *** 
     delta1 = 0.0135
     delta2 = 0.0210
     Delta = 0.0733
     b = (GAM**2*h**2*(20*Delta**3*delta1**3 - 30*Delta**3*delta1**2*zeta - 5*Delta**3*delta1*zeta**2 + 16*Delta**3*zeta**3 - 60*Delta**2*delta1**4 + 120*Delta**2*delta1**3*zeta - 5*Delta**2*delta1**2*zeta**2 - 106*Delta**2*delta1*zeta**3 + 48*Delta**2*zeta**4 - 100*Delta*delta1**3*zeta**2 + 252*Delta*delta1**2*zeta**3 - 197*Delta*delta1*zeta**4 + 48*Delta*zeta**5 + 40*delta1**6 - 120*delta1**5*zeta + 200*delta1**4*zeta**2 - 268*delta1**3*zeta**3 + 227*delta1**2*zeta**4 - 96*delta1*zeta**5 + 16*zeta**6))/(15*(Delta - 2*delta1 + zeta)**3)
-    T_90_ = int(ceil(params['T_90']/params['dt']))
-    T_180_ = int(ceil(params['T_180']/params['dt']))
-    zeta_ = int(np.floor(zeta/params['dt']))
-    delta1_ = int(ceil((delta1-2*zeta)/params['dt']))
-    delta2_ = int(ceil((delta2-2*zeta)/params['dt']))
-    gap = int(ceil((Delta-delta1-delta2)/params['dt']))
+    T_90_ = int(1e5*params['T_90'])
+    T_180_ = int(1e5*params['T_180'])
+    T_readout_ = int(1e5*params['T_readout'])
+    zeta_ = int(1e5*zeta)
+    delta1_ = int(1e5*(delta1-2*zeta))
+    delta2_ = int(1e5*(delta2-2*zeta))    
+    gap = int(1e5*(Delta-delta1-delta2))
     AsymmBipolar = np.concatenate((np.linspace(0,0,T_90_),
                                    np.linspace(0,-h,zeta_),np.linspace(-h,-h,delta1_),np.linspace(-h,0,zeta_),
                                    np.linspace(0,h,zeta_),np.linspace(h,h,delta2_),np.linspace(h,0,zeta_),
                                    np.linspace(0,0,gap),
                                    np.linspace(0,h,zeta_),np.linspace(h,h,delta2_),np.linspace(h,0,zeta_),
                                    np.linspace(0,-h,zeta_),np.linspace(-h,-h,delta1_),np.linspace(-h,0,zeta_)),axis=0)
-    TE = AsymmBipolar.size*params['dt']*1e3
+    TE = AsymmBipolar.size
     
-    return AsymmBipolar, TE, b
+    return AsymmBipolar, TE, b, params

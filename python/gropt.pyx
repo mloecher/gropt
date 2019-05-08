@@ -73,6 +73,8 @@ def gropt(params, verbose=0):
 
     if 'gmax' in params:
         gmax = params['gmax']
+        if gmax > 1.0:
+            gmax /= 1000.0
     else:
         print('ERROR: params does not contain key "gmax"')
         return
