@@ -40,7 +40,13 @@ void cvxop_moments_init(cvxop_moments *opQ, int N, int ind_inv, double dt,
  */
 void cvxop_moments_addrow(cvxop_moments *opQ, int order, double goal, double tol, double ref0, double start, double stop)
 {
-    for (int i = 0; i < opQ->N; i++) {
+    int i_start = 0;
+    int i_stop = opQ->N;
+
+    if (start > 0) {i_start = start;}
+    if (stop > 0) {i_stop = stop;}
+
+    for (int i = i_start; i < i_stop; i++) {
         double ii = i;
         double val = 1000.0 * 1000.0 * opQ->dt * pow( (1000.0 * (opQ->dt*ii + ref0)), (double)order );
         if (i > opQ->ind_inv) {val = -val;}
