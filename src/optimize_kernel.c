@@ -6,15 +6,15 @@
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
     #include <Windows.h>
 
-    // typedef struct {
-    //     long tv_sec;
-    //     long tv_usec;
-    // } timeval;
+    typedef struct {
+        long tv_sec;
+        long tv_usec;
+    } timeval;
 
-    // typedef struct {
-    //     int tz_minuteswest; 
-    //     int tz_dsttime; 
-    // } timezone;
+    typedef struct {
+        int tz_minuteswest; 
+        int tz_dsttime; 
+    } timezone;
 
     int gettimeofday(struct timeval * tp, int *tzp)
     {
@@ -654,6 +654,10 @@ void run_kernel_diff_fixedN(double **G_out, int *N_out, double **ddebug, int ver
     int N = N0;
     double dt = (TE-T_readout) * 1.0e-3 / (double) N;
 
+    struct timeval start, end;
+    double diff;
+    gettimeofday(&start, NULL);
+
     run_kernel_diff(G_out, N_out, ddebug, verbose, 
                         N, dt, gmax, smax, TE, 
                         N_moments, moments_params, PNS_thresh,
@@ -663,6 +667,13 @@ void run_kernel_diff_fixedN(double **G_out, int *N_out, double **ddebug, int ver
                         N_eddy, eddy_params,
                         0, NULL, search_bval,
                         0, NULL, slew_reg);
+
+    gettimeofday(&end, NULL);
+    diff = (end.tv_sec - start.tv_sec) + 1.0e-6 * (end.tv_usec - start.tv_usec);
+    if (verbose > 0) {
+        printf("\nOperation took %f ms (%f ms total)\n", (1.0e3*diff), 1.0e3*diff);
+    }
+    (*ddebug)[15] = diff;
 }
 
 
@@ -704,6 +715,10 @@ void run_kernel_diff_fixeddt(double **G_out, int *N_out, double **ddebug, int ve
     // double dt = (TE-T_readout) * 1.0e-3 / (double) N;
     double dt = dt0;
 
+    struct timeval start, end;
+    double diff;
+    gettimeofday(&start, NULL);
+
     run_kernel_diff(G_out, N_out, ddebug, verbose,
                             N, dt, gmax, smax, TE, 
                             N_moments, moments_params, PNS_thresh,
@@ -714,6 +729,12 @@ void run_kernel_diff_fixeddt(double **G_out, int *N_out, double **ddebug, int ve
                             0, NULL, search_bval,
                             0, NULL, slew_reg);
 
+    gettimeofday(&end, NULL);
+    diff = (end.tv_sec - start.tv_sec) + 1.0e-6 * (end.tv_usec - start.tv_usec);
+    if (verbose > 0) {
+        printf("\nOperation took %f ms (%f ms total)\n", (1.0e3*diff), 1.0e3*diff);
+    }
+    (*ddebug)[15] = diff;
 }
 
 
@@ -860,8 +881,8 @@ int main (void)
 {
     printf ("In optimize_kernel.c main function\n");
     
-    // test_timer();
-    test_minTE_diff();
+    test_timer();
+    // test_minTE_diff();
 
     return 0;
 }
@@ -976,20 +997,20 @@ void test_timer()
     // double dt_out = 10.0e-6;
     double dt_out = -1.0;
 
-    int N_time = 6;
-    struct timeval start, end;
-    double diff;
-    gettimeofday(&start, NULL);
+    int N_time = 10;
+    // struct timeval start, end;
+    // double diff;
+    // gettimeofday(&start, NULL);
 
     for (int i = 0; i < N_time; i++) {
-        run_kernel_diff_fixeddt(&G, &N, &debug, 1, dt, gmax, smax, TE, 
-                            N_moments, moment_params, PNS_thresh, 
+        run_kernel_diff_fixeddt(&G, &N, &debug, 0, dt, gmax, smax, TE, 
+                                N_moments, moment_params, PNS_thresh, 
                                 T_readout, T_90, T_180, diffmode, dt_out, N_eddy, eddy_params, 100.0, 1.0);
     }
 
-    gettimeofday(&end, NULL);
-    diff = (end.tv_sec - start.tv_sec) + 1.0e-6 * (end.tv_usec - start.tv_usec);
-    printf("\nOperation took %f ms (%f ms total)\n", (1.0e3*diff/N_time), 1.0e3*diff);
+    // gettimeofday(&end, NULL);
+    // diff = (end.tv_sec - start.tv_sec) + 1.0e-6 * (end.tv_usec - start.tv_usec);
+    // printf("\nOperation took %f ms (%f ms total)\n", (1.0e3*diff/N_time), 1.0e3*diff);
 
     return;
 }

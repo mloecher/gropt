@@ -229,7 +229,7 @@ void cvxop_moments_update(cvxop_moments *opQ, cvx_mat *txmx, double rr)
 
         // MATH: zEbuff  = zE + Ex = zE + sigE.*(E*txmx) 
         for (int j = 0; j < opQ->Nrows; j++) {
-            opQ->zQbuff.vals[j] = opQ->zQ.vals[j] + opQ->Qx.vals[j];
+            
         }
 
         // MATH: zEbar = clip( zEbuff/sigE , [-upper_tol, lower_tol])
