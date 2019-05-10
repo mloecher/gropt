@@ -374,7 +374,7 @@ def plot_waveform(G, params, plot_moments = True, plot_eddy = True, plot_pns = T
         axarr[i_row, i_col].axhline(linestyle='--', color='0.7')
         axarr[i_row, i_col].plot(all_lam, all_e)
         axarr[i_row, i_col].set_title('Eddy')
-        axarr[i_row, i_col].set_xlabel('\lambda [ms]')
+        axarr[i_row, i_col].set_xlabel('$\lambda$ [ms]')
     #     axarr[i_row, i_col].set_ylabel(' [AU]')
         i_col += 1
         if i_col >= N_cols:
