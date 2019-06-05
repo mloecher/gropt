@@ -115,11 +115,16 @@ def gropt(params, verbose=0):
         else:
             print('ERROR: params does not contain key "MMT"')
             return
-        moment_params = [[0, 0, 0, -1, -1, 0, 1.0e-3]]
+
+        if 'tol' in params:
+            tolerance = params['tol']
+        else:
+            tolerance = 1.0e-3
+        moment_params = [[0, 0, 0, -1, -1, 0, tolerance]]
         if MMT > 0:
-            moment_params.append([0, 1, 0, -1, -1, 0, 1.0e-3])
+            moment_params.append([0, 1, 0, -1, -1, 0, tolerance])
         if MMT > 1:
-            moment_params.append([0, 2, 0, -1, -1, 0, 1.0e-3])
+            moment_params.append([0, 2, 0, -1, -1, 0, tolerance])
     elif diffmode == 0:
         T_readout = 0.0
         T_90 = 0.0
@@ -201,7 +206,7 @@ def gropt(params, verbose=0):
     cdef double *ddebug
 
     # print(N_gfix)
-
+    start_t = time.time_ns()
     if N0 > 0:
         _run_kernel_diff_fixedN(&G_out, &N_out, &ddebug, verbose, N0, gmax, smax, TE, N_moments, &moment_params_view[0], 
                                 pns_thresh, T_readout, T_90, T_180, diffmode, dt_out, N_eddy, &eddy_params_view[0], -1.0, slew_reg)
@@ -213,6 +218,9 @@ def gropt(params, verbose=0):
         else:
             _run_kernel_diff_fixeddt(&G_out, &N_out, &ddebug, verbose, dt, gmax, smax, TE, N_moments, &moment_params_view[0], 
                                     pns_thresh, T_readout, T_90, T_180, diffmode, dt_out, N_eddy, &eddy_params_view[0], -1.0, slew_reg)
+    stop_t = time.time_ns()
+
+    run_time = (stop_t-start_t) / (10 ** 9)
 
     G_return = np.empty(N_out)
     for i in range(N_out):
@@ -221,6 +229,8 @@ def gropt(params, verbose=0):
     debug_out = np.empty(N_ddebug)
     for i in range(N_ddebug):
         debug_out[i] = ddebug[i]
+
+    debug_out[15] = run_time
 
     return G_return, debug_out
 

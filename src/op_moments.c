@@ -222,19 +222,13 @@ void cvxop_moments_update(cvxop_moments *opQ, cvx_mat *txmx, double rr)
 
         compute_Qx2(opQ, txmx);
 
+        double cushion = 0.99;
+
         // MATH: Ex = Ex * sigE
         for (int j = 0; j < opQ->Nrows; j++) {
             opQ->Qx.vals[j] *= opQ->sigQ.vals[j];
-        }
+            opQ->zQbuff.vals[j] = opQ->zQ.vals[j] + opQ->Qx.vals[j];
 
-        // MATH: zEbuff  = zE + Ex = zE + sigE.*(E*txmx) 
-        for (int j = 0; j < opQ->Nrows; j++) {
-            
-        }
-
-        // MATH: zEbar = clip( zEbuff/sigE , [-upper_tol, lower_tol])
-        double cushion = 0.99;
-        for (int j = 0; j < opQ->Nrows; j++) {
             double low =  (opQ->goals.vals[j] - cushion*opQ->tolerances.vals[j]) * opQ->weights.vals[j];
             double high = (opQ->goals.vals[j] + cushion*opQ->tolerances.vals[j]) * opQ->weights.vals[j];
             double val = opQ->zQbuff.vals[j] / opQ->sigQ.vals[j];
@@ -245,18 +239,12 @@ void cvxop_moments_update(cvxop_moments *opQ, cvx_mat *txmx, double rr)
             } else {
                 opQ->zQbar.vals[j] = val;
             }
-            
-        }
 
-        // MATH: zEbar = zEbuff - sigE*zEbar
-        for (int j = 0; j < opQ->Nrows; j++) {
             opQ->zQbar.vals[j] = opQ->zQbuff.vals[j] - opQ->sigQ.vals[j] * opQ->zQbar.vals[j];
-        }
 
-        // MATH: zE = rr*zEbar + (1-rr)*zE
-        for (int j = 0; j < opQ->Nrows; j++) {
             opQ->zQ.vals[j] = rr * opQ->zQbar.vals[j] + (1 - rr) * opQ->zQ.vals[j];
         }
+
     }
 }
 
