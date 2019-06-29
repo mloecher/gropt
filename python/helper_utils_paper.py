@@ -151,7 +151,7 @@ def get_stim(G, dt):
     alpha = 0.333
     r = 23.4
     c = 334e-6
-    Smin = r/alpha
+    Smin = 60
     coeff = []
     for i in range(G.size):
         coeff.append( c / ((c + dt*(G.size-1) - dt*i)**2.0) / Smin )
@@ -382,6 +382,118 @@ def plot_waveform(G, params, plot_moments = True, plot_eddy = True, plot_pns = T
     
     return bval
 
+def plot_waveform_(G, params, plot_moments = True, plot_eddy = True, plot_pns = True, plot_slew = True,
+                  suptitle = '', eddy_lines=[], eddy_range = [1e-3,120,1000]):
+    sns.set()
+    sns.set_context("talk")
+    dt = params['dt'];
+    
+    TE = params['TE']
+    T_readout = params['T_readout']
+    diffmode = 0
+    if params['mode'][:4] == 'diff':
+        diffmode = 1
+
+    #dt = (TE-T_readout) * 1.0e-3 / G.size
+    tt = np.arange(G.size) * dt * 1e3
+    tINV = TE/2.0
+    
+    N_plots = 1
+    if plot_moments: 
+        N_plots += 1
+    if plot_eddy: 
+        N_plots += 1
+    if plot_pns: 
+        N_plots += 1
+    if plot_slew: 
+        N_plots += 1
+
+    N_rows = 1 + (N_plots-1)//3
+    N_cols = ceil(N_plots/N_rows)
+
+    f, axarr = plt.subplots(N_rows, N_cols, squeeze=False, figsize=(12, N_rows*3.5))
+    
+    i_row = 0
+    i_col = 0
+
+    bval = get_bval(G, params)
+        
+    #if diffmode > 1:
+    #    axarr[i_row, i_col].axvline(tINV, linestyle='--', color='0.7')
+    axarr[i_row, i_col].plot(tt, G*1000)
+    axarr[i_row, i_col].set_title('Gradient')
+    axarr[i_row, i_col].set_xlabel('Time [ms]')
+    axarr[i_row, i_col].set_ylabel('G [mT/m]')
+        
+    i_col += 1
+    if i_col >= N_cols:
+        i_col = 0
+        i_row += 1
+
+    if plot_slew:
+        axarr[i_row, i_col].plot(tt[:-1], np.diff(G)/dt)
+        axarr[i_row, i_col].set_title('Slew')
+        axarr[i_row, i_col].set_xlabel('Time [ms]')
+
+        i_col += 1
+        if i_col >= N_cols:
+            i_col = 0
+            i_row += 1
+
+    mm = get_moment_plots(G, T_readout, dt, diffmode)                       
+    if plot_moments:
+        #axarr[i_row, i_col].axhline(linestyle='--', color='0.7')
+        for i in range(3):
+            mmt = mm[i]
+            axarr[i_row, i_col].plot(tt, mmt/np.abs(mmt).max())
+        axarr[i_row, i_col].set_ylabel('$M_{n}$ [AU]')        
+        axarr[i_row, i_col].set_title('Moments')
+        axarr[i_row, i_col].set_xlabel('Time [ms]')        
+        
+        i_col += 1
+        if i_col >= N_cols:
+            i_col = 0
+            i_row += 1
+
+    if plot_eddy:
+        all_lam = np.linspace(eddy_range[0],eddy_range[1],eddy_range[2])
+        all_e = []
+        for lam in all_lam:
+            lam = lam * 1.0e-3
+            r = np.diff(np.exp(-np.arange(G.size+1)*dt/lam))[::-1]
+            all_e.append(100*r@G)
+        
+        
+        for e in eddy_lines:
+            axarr[i_row, i_col].axvline(e, linestyle=':', color=(0.8, 0.1, 0.1, 0.8))
+        
+        axarr[i_row, i_col].axhline(linestyle='--', color='0.7')
+        axarr[i_row, i_col].plot(all_lam, all_e)
+        axarr[i_row, i_col].set_title('Eddy Currents')
+        axarr[i_row, i_col].set_xlabel('$\lambda$ [ms]')
+        i_col += 1
+        if i_col >= N_cols:
+            i_col = 0
+            i_row += 1
+
+    if plot_pns:
+        pns = np.abs(get_stim(G, dt))
+
+        axarr[i_row, i_col].axhline(1.0, linestyle=':', color=(0.8, 0.1, 0.1, 0.8))
+        
+        axarr[i_row, i_col].axhline(linestyle='--', color='0.7')
+        axarr[i_row, i_col].plot(tt[:-1], pns)
+        axarr[i_row, i_col].set_title('PNS')
+        axarr[i_row, i_col].set_xlabel('Time [ms]')
+        i_col += 1
+        if i_col >= N_cols:
+            i_col = 0
+            i_row += 1
+
+    plt.tight_layout(w_pad=0.0, rect=[0, 0.03, 1, 0.95])
+    
+    return bval    
+    
     
 def plot_waveform_overlap(G, G_, TE, TE_, params, plot_moments = True, plot_eddy = True, plot_pns = True, plot_slew = True,
                   suptitle = '', eddy_lines=[], eddy_range = [1e-3,120,1000]):
