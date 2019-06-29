@@ -2,7 +2,7 @@ import os
 from sys import platform as _platform
 
 if _platform == "darwin":
-    os.environ["CC"] = "gcc-8"
+    os.environ["CC"] = "gcc"
     os.environ["CXX"] = "g++-8"
 
 try:
