@@ -1,9 +1,12 @@
-import os
-from sys import platform as _platform
+# Updated setup.py for MacOS stock LLVM compilation, but I would like to
+# add some type of homebrew gcc detection for openmp . . . 
+import os, sys
 
-if _platform == "darwin":
-    os.environ["CC"] = "gcc-8"
-    os.environ["CXX"] = "g++-8"
+def is_platform_windows():
+    return sys.platform == "win32"
+
+def is_platform_mac():
+    return sys.platform == "darwin"
 
 try:
     from setuptools import setup
@@ -15,31 +18,25 @@ except ImportError:
 from Cython.Build import cythonize
 import numpy
 
+
 sourcefiles = ['gropt.pyx', '../src/cvx_matrix.c', '../src/op_gradient.c', '../src/op_maxwell.c', '../src/op_bval.c', '../src/op_beta.c', '../src/op_eddy.c', '../src/op_slewrate.c', '../src/op_moments.c', '../src/op_pns.c']
 
-if _platform == "darwin":
-    extensions = [Extension("gropt",
-                    sourcefiles,
-                    language="c",
-                    include_dirs=[".",  "../src", "/usr/local/include/", numpy.get_include()],
-                    library_dirs=[".", "../src", "/usr/local/lib/"],
-                    extra_compile_args=['-std=c11'],
-                   )]
-elif _platform == "win32":
-    extensions = [Extension("gropt",
-                    sourcefiles,
-                    language="c",
-                    include_dirs=[".", "../src", numpy.get_include()],
-                    library_dirs=[".", "../src"],
-                   )]
-elif _platform == "linux":
-    extensions = [Extension("gropt",
-                    sourcefiles,
-                    language="c",
-                    include_dirs=[".",  "../src", numpy.get_include()],
-                    library_dirs=[".", "../src"],
-                    extra_compile_args=['-std=c11'],
-    )]
+include_dirs = [".",  "../src", numpy.get_include()]
+library_dirs = [".", "../src"]
+if is_platform_windows:
+    extra_compile_args = []
+else:
+    extra_compile_args = ['-std=c11']
+
+
+extensions = [Extension("gropt",
+                sourcefiles,
+                language = "c",
+                include_dirs = include_dirs,
+                library_dirs = library_dirs,
+                extra_compile_args = extra_compile_args,
+            )]
+
 setup(
     ext_modules = cythonize(extensions)
 )

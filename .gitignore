@@ -16,6 +16,8 @@ __pycache__/
 
 # C extensions
 *.so
+# but we want to include gropt libraries
+!gropt*.so
 
 # Distribution / packaging
 .Python
