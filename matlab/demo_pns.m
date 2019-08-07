@@ -8,7 +8,7 @@ params.MMT = 2;
 params.T_readout = 12.0;
 params.T_90 = 3.0;
 params.T_180 = 6.0;
-params.dt = 200e-6;
+params.dt = 100e-6;
 
 G_min = get_min_TE_diff(100, 40.0, 80.0, params);
 plot_waveform(G_min, params, 1, 1, 1)
@@ -23,7 +23,7 @@ params.MMT = 2;
 params.T_readout = 12.0;
 params.T_90 = 3.0;
 params.T_180 = 6.0;
-params.dt = 200e-6;
+params.dt = 100e-6;
 params.pns_thresh = 1.0;
 
 G_min = get_min_TE_diff(100, 40.0, 80.0, params);

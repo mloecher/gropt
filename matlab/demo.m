@@ -10,7 +10,7 @@ params.T_180 = 6.0;
 params.dt = 500e-6;
 params.dt_out = 10e-6;
 
-[G, lim_break] = gropt(params);
+[G, ~] = gropt(params);
 
 plot_waveform(G, params)
 
@@ -33,7 +33,7 @@ params.moment_params(:,end+1) = [0, 1, 0, -1, -1, 11.74, 1.0e-3];
 params.TE = 1.32;
 params.dt = 10e-6;
 
-[G, lim_break] = gropt(params);
+[G, ~] = gropt(params);
 
 plot(G)
 
