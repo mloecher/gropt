@@ -5,6 +5,7 @@ python/testing2/
 src/analysis.txt
 src/op_eddy_orig.c
 .vscode/
+.DS_Store
 
 #################
 ## Defaults from github python
@@ -16,6 +17,8 @@ __pycache__/
 
 # C extensions
 *.so
+
+
 
 # Distribution / packaging
 .Python

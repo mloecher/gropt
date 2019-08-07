@@ -40,7 +40,13 @@ void cvxop_moments_init(cvxop_moments *opQ, int N, int ind_inv, double dt,
  */
 void cvxop_moments_addrow(cvxop_moments *opQ, int order, double goal, double tol, double ref0, double start, double stop)
 {
-    for (int i = 0; i < opQ->N; i++) {
+    int i_start = 0;
+    int i_stop = opQ->N;
+
+    if (start > 0) {i_start = start;}
+    if (stop > 0) {i_stop = stop;}
+
+    for (int i = i_start; i < i_stop; i++) {
         double ii = i;
         double val = 1000.0 * 1000.0 * opQ->dt * pow( (1000.0 * (opQ->dt*ii + ref0)), (double)order );
         if (i > opQ->ind_inv) {val = -val;}
@@ -216,19 +222,13 @@ void cvxop_moments_update(cvxop_moments *opQ, cvx_mat *txmx, double rr)
 
         compute_Qx2(opQ, txmx);
 
+        double cushion = 0.99;
+
         // MATH: Ex = Ex * sigE
         for (int j = 0; j < opQ->Nrows; j++) {
             opQ->Qx.vals[j] *= opQ->sigQ.vals[j];
-        }
-
-        // MATH: zEbuff  = zE + Ex = zE + sigE.*(E*txmx) 
-        for (int j = 0; j < opQ->Nrows; j++) {
             opQ->zQbuff.vals[j] = opQ->zQ.vals[j] + opQ->Qx.vals[j];
-        }
 
-        // MATH: zEbar = clip( zEbuff/sigE , [-upper_tol, lower_tol])
-        double cushion = 0.99;
-        for (int j = 0; j < opQ->Nrows; j++) {
             double low =  (opQ->goals.vals[j] - cushion*opQ->tolerances.vals[j]) * opQ->weights.vals[j];
             double high = (opQ->goals.vals[j] + cushion*opQ->tolerances.vals[j]) * opQ->weights.vals[j];
             double val = opQ->zQbuff.vals[j] / opQ->sigQ.vals[j];
@@ -239,18 +239,12 @@ void cvxop_moments_update(cvxop_moments *opQ, cvx_mat *txmx, double rr)
             } else {
                 opQ->zQbar.vals[j] = val;
             }
-            
-        }
 
-        // MATH: zEbar = zEbuff - sigE*zEbar
-        for (int j = 0; j < opQ->Nrows; j++) {
             opQ->zQbar.vals[j] = opQ->zQbuff.vals[j] - opQ->sigQ.vals[j] * opQ->zQbar.vals[j];
-        }
 
-        // MATH: zE = rr*zEbar + (1-rr)*zE
-        for (int j = 0; j < opQ->Nrows; j++) {
             opQ->zQ.vals[j] = rr * opQ->zQbar.vals[j] + (1 - rr) * opQ->zQ.vals[j];
         }
+
     }
 }
 

@@ -167,22 +167,28 @@ def get_stim(G, dt):
     stim_out = np.array(stim_out)
     return stim_out
 
-def get_moments(G, T_readout, dt):
+def get_moments(G, T_readout, dt, diffmode=0):
     TE = G.size*dt*1e3 + T_readout
     tINV = int(np.floor(TE/dt/1.0e3/2.0))
-    GAMMA   = 42.58e3; 
+    #GAMMA   = 42.58e3; 
     INV = np.ones(G.size)
-    INV[tINV:] = -1
+    if diffmode > 0:
+        INV[tINV:] = -1
     Nm = 5
     tvec = np.arange(G.size)*dt
     tMat = np.zeros((Nm, G.size))
-    scaler = np.zeros(Nm)
     for mm in range(Nm):
-        tMat[mm] = tvec**mm
-        scaler[mm] = (dt*1e3)**mm
-                                 
-    moments = np.abs(GAMMA*dt*tMat@(G*INV))
-    return moments
+        tMat[mm] = (1e3*tvec)**mm
+
+    moments = np.abs(dt*tMat@(G*INV))
+    mm = dt*tMat * (G*INV)[np.newaxis,:]
+
+    out = []
+    for i in range(Nm):
+        mmt = np.sum(mm[i])
+        out.append(mmt*1e6)
+
+    return out
 
 def get_bval(G, params):
 
