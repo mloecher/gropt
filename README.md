@@ -56,4 +56,4 @@ Demo Matlab scripts start with demo_*, are in the ./matlab/ folder, and can be r
 
 ## Documentation
 
-Further documentation, including descriptions of all constraints and their arguments and units, can be found at gropt.readthedocs.io 
+Further documentation, including descriptions of all constraints and their arguments and units, can be found at http://gropt.readthedocs.io
