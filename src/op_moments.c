@@ -4,19 +4,21 @@
  * Initialize the opQ struct
  * This is the operator that matches eddy currents
  */
-void cvxop_moments_init(cvxop_moments *opQ, int N, int ind_inv, double dt,
+void cvxop_moments_init(cvxop_moments *opQ, int N, int Naxis, int ind_inv, double dt,
                      double init_weight, int verbose)
 {
     opQ->active = 1;
     opQ->N = N;
+    opQ->Naxis = Naxis;
+    opQ->Ntotal = N * Naxis;
     opQ->ind_inv = ind_inv;
     opQ->dt = dt;
     opQ->verbose = verbose;
 
     opQ->Nrows = 0; // # of eddy current rows
 
-    cvxmat_alloc(&opQ->Q0, MAXROWS, N);
-    cvxmat_alloc(&opQ->Q, MAXROWS, N);
+    cvxmat_alloc(&opQ->Q0, MAXROWS, opQ->Ntotal);
+    cvxmat_alloc(&opQ->Q, MAXROWS, opQ->Ntotal);
 
     cvxmat_alloc(&opQ->norms, MAXROWS, 1);
     cvxmat_alloc(&opQ->weights, MAXROWS, 1);
@@ -38,9 +40,27 @@ void cvxop_moments_init(cvxop_moments *opQ, int N, int ind_inv, double dt,
  * Add a moment constraint
  * The *1000 x 3 are to get into units of mT/m*ms^X
  */
-void cvxop_moments_addrow(cvxop_moments *opQ, int order, double goal, double tol, double ref0, double start, double stop)
+void cvxop_moments_addrow(cvxop_moments *opQ, double *moments_params)
 {
-    for (int i = 0; i < opQ->N; i++) {
+    int axis = (moments_params[0] + 0.5);
+    int order = (moments_params[1] + 0.5);
+    double ref0 = moments_params[2];
+    double start = moments_params[3];
+    double stop = moments_params[4];
+    double goal = moments_params[5];
+    double tol = moments_params[6];
+
+    int i_start = 0 + axis*opQ->N;
+    int i_stop = (axis+1) * opQ->N;
+
+    if (start > 0) {
+        i_start = (int)(start+0.5) + axis*opQ->N;
+    }
+    if (stop > 0) {
+        i_stop = (int)(stop+0.5) + axis*opQ->N;
+    }
+
+    for (int i = i_start; i < i_stop; i++) {
         double ii = i;
         double val = 1000.0 * 1000.0 * opQ->dt * pow( (1000.0 * (opQ->dt*ii + ref0)), (double)order );
         if (i > opQ->ind_inv) {val = -val;}
@@ -60,7 +80,7 @@ void cvxop_moments_finishinit(cvxop_moments *opQ)
 {
     // Calculate the row norms of the eddy current array and store
     for (int j = 0; j < opQ->Nrows; j++) {
-        for (int i = 0; i < opQ->N; i++) {
+        for (int i = 0; i < opQ->Ntotal; i++) {
             double temp = cvxmat_get(&(opQ->Q0), j, i);
             opQ->norms.vals[j] += temp*temp;
         }
@@ -74,7 +94,7 @@ void cvxop_moments_finishinit(cvxop_moments *opQ)
 
     // Make Q as weighted Q0
     for (int j = 0; j < opQ->Nrows; j++) {
-        for (int i = 0; i < opQ->N; i++) {
+        for (int i = 0; i < opQ->Ntotal; i++) {
             double temp = cvxmat_get(&(opQ->Q0), j, i);
             cvxmat_set(&(opQ->Q), j, i, opQ->weights.vals[j] * temp);
         }
@@ -83,7 +103,7 @@ void cvxop_moments_finishinit(cvxop_moments *opQ)
 
     // Calculate sigQ as inverse of sum(abs(row of Q))
     for (int j = 0; j < opQ->Nrows; j++) {
-        for (int i = 0; i < opQ->N; i++) {
+        for (int i = 0; i < opQ->Ntotal; i++) {
             double temp = cvxmat_get(&(opQ->Q), j, i);
             opQ->sigQ.vals[j] += fabs(temp);
         }
@@ -121,7 +141,7 @@ void cvxop_moments_reweight(cvxop_moments *opQ, double weight_mod)
 
     // Make Q as weighted Q0
     for (int j = 0; j < opQ->Nrows; j++) {
-        for (int i = 0; i < opQ->N; i++) {
+        for (int i = 0; i < opQ->Ntotal; i++) {
             double temp = cvxmat_get(&(opQ->Q0), j, i);
             cvxmat_set(&(opQ->Q), j, i, opQ->weights.vals[j] * temp);
         }
@@ -129,7 +149,7 @@ void cvxop_moments_reweight(cvxop_moments *opQ, double weight_mod)
 
     // Calculate sigQ as inverse of sum(abs(row of Q))
     for (int j = 0; j < opQ->Nrows; j++) {
-        for (int i = 0; i < opQ->N; i++) {
+        for (int i = 0; i < opQ->Ntotal; i++) {
             double temp = cvxmat_get(&(opQ->Q), j, i);
             opQ->sigQ.vals[j] += fabs(temp);
         }
@@ -144,7 +164,7 @@ void cvxop_moments_reweight(cvxop_moments *opQ, double weight_mod)
 void cvxop_moments_add2tau(cvxop_moments *opQ, cvx_mat *tau_mat)
 {
     for (int j = 0; j < opQ->Nrows; j++) {
-        for (int i = 0; i < opQ->N; i++) {
+        for (int i = 0; i < opQ->Ntotal; i++) {
             double temp = cvxmat_get(&(opQ->Q), j, i);
             tau_mat->vals[i] += fabs(temp);
         }
@@ -160,7 +180,7 @@ void cvxop_moments_add2taumx(cvxop_moments *opQ, cvx_mat *taumx)
 {   
     // MATH: taumx += E*zE
     for (int j = 0; j < opQ->Nrows; j++) {
-        for (int i = 0; i < opQ->N; i++) {
+        for (int i = 0; i < opQ->Ntotal; i++) {
             double temp = cvxmat_get(&(opQ->Q), j, i);
             taumx->vals[i] += (temp * opQ->zQ.vals[j]);
         }
@@ -176,10 +196,10 @@ void compute_Qx(cvxop_moments *opQ, cvx_mat *txmx)
     // MATH: Ex = E * txmx
     for (int j = 0; j < opQ->Nrows; j++) {
         temp = 0.0;
-        for (int i = 0; i < opQ->N; i++) {
+        for (int i = 0; i < opQ->Ntotal; i++) {
             // double temp = cvxmat_get(&(opQ->Q), j, i) * txmx->vals[i];
             // temp += opQ->Q.vals[ii] * txmx->vals[i];
-            temp += opQ->Q.vals[j*opQ->N + i] * txmx->vals[i];
+            temp += opQ->Q.vals[j*opQ->Ntotal + i] * txmx->vals[i];
             ii++;
         }
         opQ->Qx.vals[j] = temp;
@@ -196,7 +216,7 @@ void compute_Qx2(cvxop_moments *opQ, cvx_mat *txmx)
     for (int j = 0; j < opQ->Nrows; j++) {
         xpos = &(txmx->vals[0]);
         temp = 0.0;
-        for (int i = 0; i < opQ->N; i++) {
+        for (int i = 0; i < opQ->Ntotal; i++) {
             // double temp = cvxmat_get(&(opQ->Q), j, i) * txmx->vals[i];
             // temp += opQ->Q.vals[ii] * txmx->vals[i];
             temp += (*Qpos++) * (*xpos++);
@@ -266,7 +286,7 @@ int cvxop_moments_check(cvxop_moments *opQ, cvx_mat *G)
 
     // MATH: Ex = E * txmx
     for (int j = 0; j < opQ->Nrows; j++) {
-        for (int i = 0; i < opQ->N; i++) {
+        for (int i = 0; i < opQ->Ntotal; i++) {
             double temp = cvxmat_get(&(opQ->Q0), j, i) * G->vals[i];
             opQ->Qx.vals[j] += temp;
         }

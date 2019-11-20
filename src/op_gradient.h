@@ -12,6 +12,9 @@ typedef struct {
     int verbose;
 
     int N;
+    int Naxis;
+    int Ntotal;
+    
     double dt;
 
     double gmax;
@@ -21,7 +24,7 @@ typedef struct {
 
 } cvxop_gradient;
 
-void cvxop_gradient_init(cvxop_gradient *opG, int N, double dt, double gmax, int ind_inv, int verbose);
+void cvxop_gradient_init(cvxop_gradient *opG, int N, int Naxis, double dt, double gmax, int ind_inv, int verbose);
 void cvxop_gradient_limiter(cvxop_gradient *opG, cvx_mat *xbar);
 void cvxop_gradient_setFixRange(cvxop_gradient *opG, int start, int end, double val);
 void cvxop_init_G(cvxop_gradient *opG, cvx_mat *G);

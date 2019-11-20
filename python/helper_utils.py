@@ -153,19 +153,24 @@ def get_stim(G, dt):
     c = 334e-6
     Smin = 60
     coeff = []
-    for i in range(G.size):
-        coeff.append( c / ((c + dt*(G.size-1) - dt*i)**2.0) / Smin )
+    for i in range(G.shape[1]):
+        coeff.append( c / ((c + dt*(G.shape[1]-1) - dt*i)**2.0) / Smin )
     coeff = np.array(coeff)
 
-    stim_out = []
-    for j in range(G.size-1):
-        ss = 0
-        for i in range(j+1):
-            ss += coeff[coeff.size-1-j+i]*(G[i+1]-G[i])
-        stim_out.append(ss)
+    stim_all = []
+    for ia in range(G.shape[0]):
+        stim_out = []
+        for j in range(G.shape[1]-1):
+            ss = 0
+            for i in range(j+1):
+                ss += coeff[coeff.size-1-j+i]*(G[ia, i+1]-G[ia, i])
+            stim_out.append(ss)
+        stim_all.append(np.array(stim_out))
 
-    stim_out = np.array(stim_out)
-    return stim_out
+    stim_all = np.array(stim_all)
+    stim_all = np.sqrt((stim_all**2.0).sum(0))
+    return stim_all
+
 
 def get_moments(G, T_readout, dt):
     TE = G.size*dt*1e3 + T_readout
@@ -185,6 +190,7 @@ def get_moments(G, T_readout, dt):
     return moments
 
 def get_bval(G, params):
+    G = G[0]  # TODO: 3-axis case, right now just assumes 1 axis
 
     TE = params['TE']
     T_readout = params['T_readout']
@@ -236,6 +242,7 @@ def plot_moments(G, T_readout, dt):
 
 
 def get_moment_plots(G, T_readout, dt, diffmode = 1):
+    G = G[0]  # TODO: 3-axis case, right now just assumes 1 axis
 
     TE = G.size*dt*1e3 + T_readout
     tINV = int(np.floor(TE/dt/1.0e3/2.0))
@@ -264,14 +271,16 @@ def plot_waveform(G, params, plot_moments = True, plot_eddy = True, plot_pns = T
     sns.set()
     sns.set_context("talk")
     
+    Naxis = params.get('Naxis', 1)
+
     TE = params['TE']
     T_readout = params['T_readout']
     diffmode = 0
     if params['mode'][:4] == 'diff':
         diffmode = 1
 
-    dt = (TE-T_readout) * 1.0e-3 / G.size
-    tt = np.arange(G.size) * dt * 1e3
+    dt = (TE-T_readout) * 1.0e-3 / G.shape[1]
+    tt = np.arange(G.shape[1]) * dt * 1e3
     tINV = TE/2.0
     
     N_plots = 1
@@ -301,7 +310,9 @@ def plot_waveform(G, params, plot_moments = True, plot_eddy = True, plot_pns = T
         
     if diffmode > 1:
         axarr[i_row, i_col].axvline(tINV, linestyle='--', color='0.7')
-    axarr[i_row, i_col].plot(tt, G*1000)
+
+    for ia in range(Naxis):
+        axarr[i_row, i_col].plot(tt, G[ia]*1000)
     axarr[i_row, i_col].set_title('Gradient')
     axarr[i_row, i_col].set_xlabel('t [ms]')
 #     axarr[i_row, i_col].set_ylabel('G [mT/m]')
@@ -311,7 +322,8 @@ def plot_waveform(G, params, plot_moments = True, plot_eddy = True, plot_pns = T
         i_row += 1
 
     if plot_slew:
-        axarr[i_row, i_col].plot(tt[:-1], np.diff(G)/dt)
+        for ia in range(Naxis):
+            axarr[i_row, i_col].plot(tt[:-1], np.diff(G[ia])/dt)
         axarr[i_row, i_col].set_title('Slew')
         axarr[i_row, i_col].set_xlabel('t [ms]')
 
@@ -342,8 +354,8 @@ def plot_waveform(G, params, plot_moments = True, plot_eddy = True, plot_pns = T
         all_e = []
         for lam in all_lam:
             lam = lam * 1.0e-3
-            r = np.diff(np.exp(-np.arange(G.size+1)*dt/lam))[::-1]
-            all_e.append(100*r@G)
+            r = np.diff(np.exp(-np.arange(G[0].size+1)*dt/lam))[::-1]  # TODO: 3-axis case, right now just assumes 1 axis
+            all_e.append(100*r@G[0])
         
         
         for e in eddy_lines:
