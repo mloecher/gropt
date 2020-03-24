@@ -1,5 +1,8 @@
 *.mexw64
 *.asv
+
+_MACOSX/
+python/paper/
 python/testing/
 python/testing2/
 src/analysis.txt
