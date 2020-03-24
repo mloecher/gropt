@@ -1,10 +1,13 @@
 *.mexw64
 *.asv
 
-_MACOSX/
+__MACOSX/
+
 python/paper/
 python/testing/
 python/testing2/
+python/testing3/
+
 src/analysis.txt
 src/op_eddy_orig.c
 .vscode/
