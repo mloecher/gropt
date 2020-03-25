@@ -19,6 +19,10 @@ A toolbox for MRI Gradient Optimization (GrOpt)
 - [Demos](#demos)
 - [Documentation](#documentation)
 
+## Updates
+ * Added minTE_finder in src/optimize_kernel.c (minTE_diff function) to more efficiently fine the minimum TE
+ * Added simultaneuous axis optimization, contorlled with Naxis argument to optimize calls
+ * AR-SDMM solver is in its own branch (arsdmm), currently merging 
 
 ## Installation
 
