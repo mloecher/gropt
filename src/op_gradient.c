@@ -4,23 +4,27 @@
  * Initialize the opG struct
  * This is the operator that puts limits on gradient amplitude
  */
-void cvxop_gradient_init(cvxop_gradient *opG, int N, double dt, double gmax, int ind_inv, int verbose) {
+void cvxop_gradient_init(cvxop_gradient *opG, int N, int Naxis, double dt, double gmax, int ind_inv, int verbose) {
     opG->active = 1;
     opG->N = N;
+    opG->Naxis = Naxis;
+    opG->Ntotal = N * Naxis;
     opG->dt = dt;
     opG->gmax = gmax;
     opG->ind_inv = ind_inv;
     opG->verbose = verbose;
     
 
-    cvxmat_alloc(&opG->Gfix, N, 1);
+    cvxmat_alloc(&opG->Gfix, opG->Ntotal, 1);
 
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < opG->Ntotal; i++) {
         opG->Gfix.vals[i] = -999999.0; // Flag for no limit on this point
     }
 
-    opG->Gfix.vals[0] = 0.0;
-    opG->Gfix.vals[N-1] = 0.0;
+    for (int iA = 0; iA < Naxis; iA++) {
+        opG->Gfix.vals[0 + iA*N] = 0.0;
+        opG->Gfix.vals[N-1 + iA*N] = 0.0;
+    }
 }
 
 /**
@@ -35,6 +39,7 @@ void cvxop_gradient_setFixRange(cvxop_gradient *opG, int start, int end, double 
         opG->Gfix.vals[i] = val;
     }
 }
+
 
 void cvxop_gradient_setGfix(cvxop_gradient *opG, int N_gfix, double *gfix) 
 {
@@ -51,6 +56,7 @@ void cvxop_gradient_setGfix(cvxop_gradient *opG, int N_gfix, double *gfix)
         }
     }
 }
+
 
 /**
  * Takes an input vector and enforces gradient limits on it.
@@ -141,7 +147,7 @@ double cvxop_gradient_getbval(cvxop_gradient *opG, cvx_mat *G)
 int cvxop_gradient_overflowcheck(cvxop_gradient *opG, cvx_mat *G)
 {
     double max_gval = 0.0;
-    for (int i = 0; i < opG->N; i++) {
+    for (int i = 0; i < opG->Ntotal; i++) {
         double val = G->vals[i];
         if (fabs(val) > max_gval) {
             max_gval = fabs(val);

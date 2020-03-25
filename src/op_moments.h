@@ -12,6 +12,8 @@ typedef struct {
     int verbose;
 
     int N;
+    int Naxis;
+    int Ntotal;
     int Nrows;
 
     int ind_inv;
@@ -41,9 +43,9 @@ typedef struct {
 
 #define MAXROWS 16
 
-void cvxop_moments_init(cvxop_moments *opQ, int N, int ind_inv, double dt,
+void cvxop_moments_init(cvxop_moments *opQ, int N, int Naxis, int ind_inv, double dt,
                      double init_weight, int verbose);
-void cvxop_moments_addrow(cvxop_moments *opQ, int order, double goal, double tol, double ref0, double start, double stop);
+void cvxop_moments_addrow(cvxop_moments *opQ, double *moments_params);
 void cvxop_moments_finishinit(cvxop_moments *opE);
 
 void compute_Qx(cvxop_moments *opQ, cvx_mat *txmx);

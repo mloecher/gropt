@@ -12,6 +12,8 @@ typedef struct {
     int verbose;
 
     int N;
+    int Naxis;
+    int Ntotal;
     double dt;
 
     double regularize;
@@ -28,7 +30,7 @@ typedef struct {
 
 } cvxop_slewrate;
 
-void cvxop_slewrate_init(cvxop_slewrate *opD, int N, double dt, double smax, 
+void cvxop_slewrate_init(cvxop_slewrate *opD, int N, int Naxis, double dt, double smax, 
                   double init_weight, double regularize, int verbose);
 void cvxop_slewrate_reweight(cvxop_slewrate *opD, double weight_mod);
 void cvxop_slewrate_add2tau(cvxop_slewrate *opD, cvx_mat *tau_mat);

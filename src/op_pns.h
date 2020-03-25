@@ -12,6 +12,9 @@ typedef struct {
     int verbose;
     
     int N;
+    int Naxis;
+    int Ntotal;
+    
     int ind_inv;
     double dt;
     double thresh;
@@ -30,7 +33,7 @@ typedef struct {
 
 } cvxop_pns;
 
-void cvxop_pns_init(cvxop_pns *opP, int N, double dt, int ind_inv, double thresh, double init_weight, int verbose);
+void cvxop_pns_init(cvxop_pns *opP, int N, int Naxis, double dt, int ind_inv, double thresh, double init_weight, int verbose);
 int cvxop_pns_check(cvxop_pns *opP, cvx_mat *G);
 void cvxop_pns_add2tau(cvxop_pns *opP, cvx_mat *tau_mat);
 void cvxop_pns_add2taumx(cvxop_pns *opP, cvx_mat *taumx);

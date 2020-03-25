@@ -4,10 +4,13 @@
  * Initialize the opD struct
  * This is the operator that enforces the global slew rate limit
  */
-void cvxop_slewrate_init(cvxop_slewrate *opD, int N, double dt, double smax, double init_weight, double regularize, int verbose)
+void cvxop_slewrate_init(cvxop_slewrate *opD, int N, int Naxis, double dt, double smax, double init_weight, double regularize, int verbose)
 {
     opD->active = 1;
     opD->N = N;
+    opD->Naxis = Naxis;
+    opD->Ntotal = N * Naxis;
+
     opD->dt = dt;
 
     opD->weight = init_weight;
@@ -23,10 +26,10 @@ void cvxop_slewrate_init(cvxop_slewrate *opD, int N, double dt, double smax, dou
         printf("opD->smax = %.2e\n", opD->smax);
     }
 
-    cvxmat_alloc(&opD->zD, N-1, 1);
-    cvxmat_alloc(&opD->zDbuff, N-1, 1);
-    cvxmat_alloc(&opD->zDbar, N-1, 1);
-    cvxmat_alloc(&opD->Dx, N-1, 1);
+    cvxmat_alloc(&opD->zD, Naxis*(N-1), 1);
+    cvxmat_alloc(&opD->zDbuff, Naxis*(N-1), 1);
+    cvxmat_alloc(&opD->zDbar, Naxis*(N-1), 1);
+    cvxmat_alloc(&opD->Dx, Naxis*(N-1), 1);
 }
 
 /**
@@ -52,12 +55,14 @@ void cvxop_slewrate_reweight(cvxop_slewrate *opD, double weight_mod)
  */
 void cvxop_slewrate_add2tau(cvxop_slewrate *opD, cvx_mat *tau_mat)
 {
-    int N = tau_mat->rows;
-    for (int i = 0; i < N; i++) {
-        if ((i == 0) || (i == N-1)) {
-            tau_mat->vals[i] += opD->weight;
-        } else {
-            tau_mat->vals[i] += 2.0*opD->weight;
+    int N = opD->N;
+    for (int iA = 0; iA < opD->Naxis; iA++) {
+        for (int i = 0; i < N; i++) {
+            if ((i == 0) || (i == N-1)) {
+                tau_mat->vals[i + iA*N] += opD->weight;
+            } else {
+                tau_mat->vals[i + iA*N] += 2.0*opD->weight;
+            }
         }
     }
 }
@@ -69,13 +74,14 @@ void cvxop_slewrate_add2tau(cvxop_slewrate *opD, cvx_mat *tau_mat)
 void cvxop_slewrate_add2taumx(cvxop_slewrate *opD, cvx_mat *taumx)
 {   
     
-    // MATH: taumx += D*zD
-    taumx->vals[0] += -opD->weight*opD->zD.vals[0];
-    for (int i = 1; i < opD->zD.N; i++) {
-        taumx->vals[i] += opD->weight*(opD->zD.vals[i-1] - opD->zD.vals[i]);
+    int N = opD->N;
+    for (int iA = 0; iA < opD->Naxis; iA++) {
+        taumx->vals[iA*N] += -opD->weight*opD->zD.vals[iA*(N-1)];
+        for (int i = 1; i < N-1; i++) {
+            taumx->vals[i + iA*N] += opD->weight*(opD->zD.vals[i - 1 + iA*(N-1)] - opD->zD.vals[i + iA*(N-1)]);
+        }
+        taumx->vals[N-1] += opD->weight*opD->zD.vals[(N-2) + iA*(N-1)];
     }
-    taumx->vals[taumx->N-1] += opD->weight*opD->zD.vals[opD->zD.N-1];
-
 }
 
 /**
@@ -85,8 +91,12 @@ void cvxop_slewrate_update(cvxop_slewrate *opD, cvx_mat *txmx, double rr)
 {
     //MATH: Dx = sigD * D * txmx
     cvxmat_setvals(&(opD->Dx), 0.0);
-    for (int i = 0; i < opD->Dx.N; i++) {
-        opD->Dx.vals[i] += opD->weight*opD->sigD*(txmx->vals[i+1] - txmx->vals[i]);
+
+    int N = opD->N;
+    for (int iA = 0; iA < opD->Naxis; iA++) {
+        for (int i = 0; i < N-1; i++) {
+            opD->Dx.vals[i + iA*(N-1)] += opD->weight*opD->sigD*(txmx->vals[i + 1 + iA*N] - txmx->vals[i + iA*N]);
+        }
     }
 
     // MATH: zDbuff  = zD + Dx = zD + sigD.*(D*txmx) 
@@ -124,8 +134,12 @@ void cvxop_slewrate_update(cvxop_slewrate *opD, cvx_mat *txmx, double rr)
 int cvxop_slewrate_check(cvxop_slewrate *opD, cvx_mat *G)
 {
     cvxmat_setvals(&(opD->Dx), 0.0);
-    for (int i = 0; i < opD->Dx.N; i++) {
-        opD->Dx.vals[i] += opD->weight*opD->sigD*(G->vals[i+1] - G->vals[i]);
+
+    int N = opD->N;
+    for (int iA = 0; iA < opD->Naxis; iA++) {
+        for (int i = 0; i < N-1; i++) {
+            opD->Dx.vals[i + iA*(N-1)] += opD->weight*opD->sigD*(G->vals[i+1+iA*N] - G->vals[i+iA*N]);
+        }
     }
 
     int slew_too_high = 0;

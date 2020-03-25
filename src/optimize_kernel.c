@@ -1,8 +1,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
-// #include <time.h>
 
+//*******************
+// Everything in the next section is used to time functions in Windows
+// Annoyingly, in pure C this is difficult to do in a cross-platform manner
+//*******************
+
+// #include <time.h>
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
     #include <Windows.h>
 
@@ -38,8 +43,6 @@
 #else
     #include <sys/time.h>
 #endif
-
-
 
 #include "cvx_matrix.h"
 #include "op_slewrate.h"
@@ -451,7 +454,7 @@ void interp(cvx_mat *G, double dt_in, double dt_out, double TE, double T_readout
         ti = (dt_out * i) / dt_in;
         
         i0 = floor(ti);
-        if (i0 < 0) {i0 = 0;} // Shouldn't happen unless some weird rounding and floor?
+        if (i0 < 0) {i0 = 0;} // This shouldn't happen unless some weird rounding and floor?
         
         i1 = i0+1;
 
@@ -488,7 +491,8 @@ void run_kernel_diff(double **G_out, int *N_out, double **ddebug, int verbose,
                             int is_Gin, double *G_in, 
                             double search_bval,
                             int N_gfix, double *gfix,
-                            double slew_reg)
+                            double slew_reg,
+                            int Naxis)
 {
     double relax = 1.8;
 
@@ -571,7 +575,7 @@ void run_kernel_diff(double **G_out, int *N_out, double **ddebug, int verbose,
 
     
     cvxop_gradient opG;
-    cvxop_gradient_init(&opG, N, dt, gmax, ind_inv, verbose);
+    cvxop_gradient_init(&opG, N, Naxis, dt, gmax, ind_inv, verbose);
     cvxop_gradient_setFixRange(&opG, 0, ind_end90, 0.0);
     cvxop_gradient_setFixRange(&opG, ind_start180, ind_end180, 0.0);
     if (N_gfix > 0) {
@@ -579,24 +583,19 @@ void run_kernel_diff(double **G_out, int *N_out, double **ddebug, int verbose,
     } 
 
     cvxop_slewrate opD;
-    cvxop_slewrate_init(&opD, N, dt, smax, slew_weight, slew_reg, verbose);
+    cvxop_slewrate_init(&opD, N, Naxis, dt, smax, slew_weight, slew_reg, verbose);
 
     cvxop_pns opP;
-    cvxop_pns_init(&opP, N, dt, ind_inv, PNS_thresh, 1.0, verbose);
+    cvxop_pns_init(&opP, N, Naxis, dt, ind_inv, PNS_thresh, 1.0, verbose);
 
     cvxop_maxwell opX;
     cvxop_maxwell_init(&opX, N, dt, ind_inv, .01, verbose);
     opX.active = 0;
 
     cvxop_moments opQ;
-    cvxop_moments_init(&opQ, N, ind_inv, dt, moments_weight, verbose);
+    cvxop_moments_init(&opQ, N, Naxis, ind_inv, dt, moments_weight, verbose);
     for (int i = 0; i < N_moments; i++) {
-        cvxop_moments_addrow(&opQ, moments_params[MOMENTS_PARAMS_LEN*i+1], 
-                                   moments_params[MOMENTS_PARAMS_LEN*i+5], 
-                                   moments_params[MOMENTS_PARAMS_LEN*i+6],
-                                   moments_params[MOMENTS_PARAMS_LEN*i+2],
-                                   moments_params[MOMENTS_PARAMS_LEN*i+3],
-                                   moments_params[MOMENTS_PARAMS_LEN*i+4]);
+        cvxop_moments_addrow(&opQ, moments_params + (MOMENTS_PARAMS_LEN*i));
     }
     cvxop_moments_finishinit(&opQ);
     
@@ -613,12 +612,12 @@ void run_kernel_diff(double **G_out, int *N_out, double **ddebug, int verbose,
     
     cvx_mat G;
     
-    cvxmat_alloc(&G, N, 1);
+    cvxmat_alloc(&G, N*Naxis, 1);
     cvxmat_setvals(&G, 0.0);
     if (is_Gin == 0) {   
         cvxop_init_G(&opG, &G);
     } else {
-        for (int i = 0; i < N; i++) {
+        for (int i = 0; i < N*Naxis; i++) {
             G.vals[i] = G_in[i];
         }
     }
@@ -686,6 +685,7 @@ void run_kernel_diff_fixedN(double **G_out, int *N_out, double **ddebug, int ver
                         10.0,  dt_out,
                         N_eddy, eddy_params,
                         0, NULL, search_bval,
+<<<<<<< HEAD
                         0, NULL, slew_reg);
 
     // gettimeofday(&end, NULL);
@@ -696,6 +696,10 @@ void run_kernel_diff_fixedN(double **G_out, int *N_out, double **ddebug, int ver
     // }
     
     // (*ddebug)[15] = diff;
+=======
+                        0, NULL, slew_reg,
+                        1);
+>>>>>>> 3axis
 }
 
 
@@ -716,7 +720,7 @@ void run_kernel_diff_fixedN_Gin(double **G_out, int *N_out, double **ddebug, int
                         10.0,  dt_out,
                         N_eddy, eddy_params,
                         1, G_in, search_bval,
-                        0, NULL, slew_reg);
+                        0, NULL, slew_reg, 1);
 }
 
 
@@ -726,7 +730,7 @@ void run_kernel_diff_fixeddt(double **G_out, int *N_out, double **ddebug, int ve
                             double dt0, double gmax, double smax, double TE,
                             int N_moments, double *moments_params, double PNS_thresh, 
                             double T_readout, double T_90, double T_180, int diffmode, double dt_out,
-                            int N_eddy, double *eddy_params, double search_bval, double slew_reg)
+                            int N_eddy, double *eddy_params, double search_bval, double slew_reg, int Naxis)
 {
     int N = round((TE-T_readout) * 1.0e-3/dt0);
     if (N < 5) {
@@ -749,7 +753,7 @@ void run_kernel_diff_fixeddt(double **G_out, int *N_out, double **ddebug, int ve
                             10.0,  dt_out,
                             N_eddy, eddy_params,
                             0, NULL, search_bval,
-                            0, NULL, slew_reg);
+                            0, NULL, slew_reg, Naxis);
 
     // gettimeofday(&end, NULL);
     // diff = (end.tv_sec - start.tv_sec) + 1.0e-6 * (end.tv_usec - start.tv_usec);
@@ -784,7 +788,7 @@ void run_kernel_diff_fixeddt_fixG(double **G_out, int *N_out, double **ddebug, i
                             10.0,  dt_out,
                             N_eddy, eddy_params,
                             0, NULL, search_bval,
-                            N_gfix, gfix, slew_reg);
+                            N_gfix, gfix, slew_reg, 1);
 
 }
 
@@ -822,7 +826,7 @@ void minTE_diff(double **G_out, int *N_out, double **ddebug, int verbose,
                         10.0,  dt_out,
                         N_eddy, eddy_params,
                         0, NULL, search_bval,
-                        0, NULL, slew_reg);
+                        0, NULL, slew_reg, 1);
         bval = (*ddebug)[13];
         
         if (verbose > 0) {printf ("Search at TE = %.2f gave bval = %.1f  T_range = %.2f\n", TE, bval, T_range);}
@@ -860,7 +864,7 @@ void minTE_diff(double **G_out, int *N_out, double **ddebug, int verbose,
                         10.0,  dt_out,
                         N_eddy, eddy_params,
                         0, NULL, search_bval,
-                        0, NULL, slew_reg);
+                        0, NULL, slew_reg, 1);
         bval = (*ddebug)[13];
         
         if (verbose > 0) {printf ("Search at TE = %.2f gave bval = %.1f  T_range = %.2f\n", TE, bval, T_range);}
@@ -890,7 +894,7 @@ void minTE_diff(double **G_out, int *N_out, double **ddebug, int verbose,
                     10.0,  dt_out,
                     N_eddy, eddy_params,
                     0, NULL, -1.0,
-                    0, NULL, slew_reg);
+                    0, NULL, slew_reg, 1);
     bval = (*ddebug)[13];
     
     if (verbose > 0) {printf ("Search at TE = %.2f gave bval = %.1f  T_range = %.2f\n", TE, bval, T_range);}
@@ -912,7 +916,7 @@ int main (void)
 
 void test_minTE_diff()
 {
-        // 1 = betamax
+    // 1 = betamax
     // 2 = bval max
     int diffmode = 2;
 
@@ -977,7 +981,7 @@ void test_minTE_diff()
 
 void test_timer()
 {
-        // 1 = betamax
+    // 1 = betamax
     // 2 = bval max
     int diffmode = 2;
 
@@ -1033,9 +1037,15 @@ void test_timer()
     // gettimeofday(&start, NULL);
 
     for (int i = 0; i < N_time; i++) {
+<<<<<<< HEAD
         run_kernel_diff_fixeddt(&G, &N, &debug, 0, dt, gmax, smax, TE, 
                                 N_moments, moment_params, PNS_thresh, 
                                 T_readout, T_90, T_180, diffmode, dt_out, N_eddy, eddy_params, 100.0, 1.0);
+=======
+        run_kernel_diff_fixeddt(&G, &N, &debug, 1, dt, gmax, smax, TE, 
+                            N_moments, moment_params, PNS_thresh, 
+                            T_readout, T_90, T_180, diffmode, dt_out, N_eddy, eddy_params, 100.0, 1.0, 1);
+>>>>>>> 3axis
     }
 
     // gettimeofday(&end, NULL);
