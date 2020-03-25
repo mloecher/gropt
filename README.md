@@ -21,9 +21,9 @@ A toolbox for MRI Gradient Optimization (GrOpt)
 
 ## Updates
 
-### March 23, 2020
+#### March 23, 2020
  * AR-SDMM solver is in its own branch (arsdmm), currently merging 
-### Feb 10, 2020
+#### Feb 10, 2020
  * Added minTE_finder in src/optimize_kernel.c (minTE_diff function) to more efficiently fine the minimum TE
  * Added simultaneuous axis optimization, contorlled with Naxis argument to optimize calls
 
