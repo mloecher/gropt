@@ -685,21 +685,8 @@ void run_kernel_diff_fixedN(double **G_out, int *N_out, double **ddebug, int ver
                         10.0,  dt_out,
                         N_eddy, eddy_params,
                         0, NULL, search_bval,
-<<<<<<< HEAD
-                        0, NULL, slew_reg);
-
-    // gettimeofday(&end, NULL);
-    // diff = (end.tv_sec - start.tv_sec) + 1.0e-6 * (end.tv_usec - start.tv_usec);
-    
-    // if (verbose > 0) {
-    //     printf("\nOperation took %f ms (%f ms total)\n", (1.0e3*diff), 1.0e3*diff);
-    // }
-    
-    // (*ddebug)[15] = diff;
-=======
                         0, NULL, slew_reg,
                         1);
->>>>>>> 3axis
 }
 
 
@@ -1037,15 +1024,9 @@ void test_timer()
     // gettimeofday(&start, NULL);
 
     for (int i = 0; i < N_time; i++) {
-<<<<<<< HEAD
-        run_kernel_diff_fixeddt(&G, &N, &debug, 0, dt, gmax, smax, TE, 
-                                N_moments, moment_params, PNS_thresh, 
-                                T_readout, T_90, T_180, diffmode, dt_out, N_eddy, eddy_params, 100.0, 1.0);
-=======
         run_kernel_diff_fixeddt(&G, &N, &debug, 1, dt, gmax, smax, TE, 
                             N_moments, moment_params, PNS_thresh, 
                             T_readout, T_90, T_180, diffmode, dt_out, N_eddy, eddy_params, 100.0, 1.0, 1);
->>>>>>> 3axis
     }
 
     // gettimeofday(&end, NULL);

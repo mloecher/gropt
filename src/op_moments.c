@@ -42,13 +42,6 @@ void cvxop_moments_init(cvxop_moments *opQ, int N, int Naxis, int ind_inv, doubl
  */
 void cvxop_moments_addrow(cvxop_moments *opQ, double *moments_params)
 {
-<<<<<<< HEAD
-    int i_start = 0;
-    int i_stop = opQ->N;
-
-    if (start > 0) {i_start = start;}
-    if (stop > 0) {i_stop = stop;}
-=======
     int axis = (moments_params[0] + 0.5);
     int order = (moments_params[1] + 0.5);
     double ref0 = moments_params[2];
@@ -66,7 +59,6 @@ void cvxop_moments_addrow(cvxop_moments *opQ, double *moments_params)
     if (stop > 0) {
         i_stop = (int)(stop+0.5) + axis*opQ->N;
     }
->>>>>>> 3axis
 
     for (int i = i_start; i < i_stop; i++) {
         double ii = i;

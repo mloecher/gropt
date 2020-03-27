@@ -248,12 +248,8 @@ def plot_moments(G, T_readout, dt):
     plt.axhline(0, color='k')
 
 
-<<<<<<< HEAD
-def get_moment_plots(G, T_readout, dt, diffmode):
-=======
 def get_moment_plots(G, T_readout, dt, diffmode = 1):
     G = G[0]  # TODO: 3-axis case, right now just assumes 1 axis
->>>>>>> 3axis
 
     TE = G.size*dt*1e3 + T_readout
     tINV = int(np.floor(TE/dt/1.0e3/2.0))
@@ -299,14 +295,8 @@ def plot_waveform(G, params, plot_moments = True, plot_eddy = True, plot_pns = T
     if params['mode'][:4] == 'diff':
         diffmode = 1
 
-<<<<<<< HEAD
-    #dt = (TE-T_readout) * 1.0e-3 / G.size
-    dt = params['dt']
-    tt = np.arange(G.size) * dt * 1e3
-=======
     dt = (TE-T_readout) * 1.0e-3 / G.shape[1]
     tt = np.arange(G.shape[1]) * dt * 1e3
->>>>>>> 3axis
     tINV = TE/2.0
     
     N_plots = 1
@@ -336,17 +326,11 @@ def plot_waveform(G, params, plot_moments = True, plot_eddy = True, plot_pns = T
         
     if diffmode > 1:
         axarr[i_row, i_col].axvline(tINV, linestyle='--', color='0.7')
-<<<<<<< HEAD
-    axarr[i_row, i_col].plot(tt, G*1000)
-    axarr[i_row, i_col].set_title('Gradient [mT/m]')
-    axarr[i_row, i_col].set_xlabel('Time [ms]')
-=======
 
     for ia in range(Naxis):
         axarr[i_row, i_col].plot(tt, G[ia]*1000)
     axarr[i_row, i_col].set_title('Gradient')
     axarr[i_row, i_col].set_xlabel('t [ms]')
->>>>>>> 3axis
 #     axarr[i_row, i_col].set_ylabel('G [mT/m]')
     i_col += 1
     if i_col >= N_cols:
@@ -354,16 +338,10 @@ def plot_waveform(G, params, plot_moments = True, plot_eddy = True, plot_pns = T
         i_row += 1
 
     if plot_slew:
-<<<<<<< HEAD
-        axarr[i_row, i_col].plot(tt[:-1], np.diff(G)/dt)
-        axarr[i_row, i_col].set_title('Slew [mT/m/ms]')
-        axarr[i_row, i_col].set_xlabel('Time [ms]')
-=======
         for ia in range(Naxis):
             axarr[i_row, i_col].plot(tt[:-1], np.diff(G[ia])/dt)
         axarr[i_row, i_col].set_title('Slew')
         axarr[i_row, i_col].set_xlabel('t [ms]')
->>>>>>> 3axis
 
         i_col += 1
         if i_col >= N_cols:
