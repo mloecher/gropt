@@ -1,55 +1,27 @@
-#ifndef CVX_OPBVAL_H
-#define CVX_OPBVAL_H
+#ifndef OP_BVAL_H
+#define OP_BVAL_H
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
+#include <iostream> 
+#include <string>
+#include <Eigen/Dense>
+#include "op_main.h"
 
-#include "cvx_matrix.h"
+using namespace Eigen;
+using namespace std; 
 
-typedef struct {
-    int active;
-    int verbose;
-    
-    int N;
-    int ind_inv;
-    double dt;
+class Op_BVal : public Operator
+{  
+    protected:
+        double GAMMA;
+        double MAT_SCALE;
 
-    double weight;
-    double mat_norm;
+    public:
+        Op_BVal(int N, double dt);
+        virtual void forward(VectorXd &X, VectorXd &out, bool apply_weight, int norm, bool no_balance);
+        virtual void transpose(VectorXd &X, VectorXd &out, bool apply_weight, int norm);
+        virtual void prox(VectorXd &X);
 
-    cvx_mat sigBdenom;
-    cvx_mat sigB;
-
-    cvx_mat csx;
-    cvx_mat Btau;
-    cvx_mat C;
-    
-    cvx_mat zB;
-    cvx_mat zBbuff;
-    cvx_mat zBbar;
-    cvx_mat Bx;
-    
-    // Used for CG
-    cvx_mat b;
-    cvx_mat x;
-    cvx_mat r;
-    cvx_mat p;
-    cvx_mat Ap;
-
-} cvxop_bval;
-
-void cvxop_bval_init(cvxop_bval *opB, int N, int ind_inv, double dt, double init_weight, int verbose);
-void cvxop_bval_updatesigma(cvxop_bval *opB);
-void cvxop_bval_reweight(cvxop_bval *opB, double weight_mod);
-void cvxop_bval_add2tau(cvxop_bval *opB, cvx_mat *tau_mat);
-void cvxop_bval_add2taumx(cvxop_bval *opB, cvx_mat *taumx);
-void cvxop_bval_update(cvxop_bval *opB, cvx_mat *txmx, double relax, double *ddebug, int count);
-void cvxop_bval_destroy(cvxop_bval *opB);
-
-void cvxop_bval_prox(cvxop_bval *opB);
-void cvxop_bval_proxxbar(cvxop_bval *opB, cvx_mat *xbar, double eps);
+};
 
 
-
-#endif /* CVX_OPBVAL_H */
+#endif
