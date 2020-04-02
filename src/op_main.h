@@ -23,6 +23,7 @@ class Operator
         VectorXd tol;
         VectorXd target;
 
+        bool row_constraints; // Are there multiple individual values constraints?
         int Nc; // Number of constraints within the operator
         int Ax_size; // Vector size of Ax
         VectorXd spec_norm2;
@@ -68,8 +69,12 @@ class Operator
         VectorXd du;
         VectorXd dhhat;
         VectorXd dghat;
+
+        MatrixXd hist_check;
+        MatrixXd hist_feas;
+        MatrixXd hist_obj;
         
-        Operator(int N, double dt, int Nc, int Ax_size);
+        Operator(int N, double dt, int Nc, int Ax_size, bool row_constraints);
         void allocate_rwvecs();    
         void reweight();
         void update(VectorXd &X, int iiter);
@@ -79,6 +84,8 @@ class Operator
         virtual void forward(VectorXd &X, VectorXd &out, bool apply_weight, int norm, bool no_balance);
         virtual void transpose(VectorXd &X, VectorXd &out, bool apply_weight, int norm);
         virtual void prox(VectorXd &X);
+        virtual void check(VectorXd &X, int iiter);
+        virtual void get_obj(VectorXd &X, int iiter);
         virtual void set_inv_vec(VectorXd &inv_vec_in);
         virtual void set_fixer(VectorXd &fixer_in);
         

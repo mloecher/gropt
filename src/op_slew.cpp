@@ -9,7 +9,7 @@ using namespace std;
 #include "op_slew.h"
 
 Op_Slew::Op_Slew(int N, double dt) 
-    : Operator(N, dt, 1, (N-1))
+    : Operator(N, dt, 1, (N-1), false)
 {
     name = "Slew";
     do_rw = true; 

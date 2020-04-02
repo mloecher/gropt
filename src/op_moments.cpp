@@ -9,7 +9,7 @@ using namespace std;
 #include "op_moments.h"
 
 Op_Moments::Op_Moments(int N, double dt, int Nc) 
-    : Operator(N, dt, Nc, Nc)
+    : Operator(N, dt, Nc, Nc, true)
 {
     name = "Moments";
     moment_params.setZero(Nc, 7);
@@ -57,7 +57,7 @@ void Op_Moments::set_params(int N_moments, double* moment_params_in)
 void Op_Moments::set_params(MatrixXd &moment_params_in)
 {
     if (Nc != moment_params_in.rows()) {
-        cout << "ERROR: Nc not equal to moment_params.rows() in Op_Moments";
+        cout << "ERROR: Nc not equal to moment_params.rows() in Op_Moments " << Nc << "  " << moment_params_in.rows() << endl;
     }
 
     moment_params = moment_params_in;

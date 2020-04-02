@@ -20,6 +20,7 @@ class Op_BVal : public Operator
         virtual void forward(VectorXd &X, VectorXd &out, bool apply_weight, int norm, bool no_balance);
         virtual void transpose(VectorXd &X, VectorXd &out, bool apply_weight, int norm);
         virtual void prox(VectorXd &X);
+        virtual void get_obj(VectorXd &X, int iiter);
 
 };
 

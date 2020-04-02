@@ -1,5 +1,5 @@
-#ifndef OP_CG_ITER_H
-#define OP_CG_ITER_H
+#ifndef CG_ITER_H
+#define CG_ITER_H
 
 #include <iostream> 
 #include <string>

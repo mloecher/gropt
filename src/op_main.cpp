@@ -8,8 +8,14 @@ using namespace std;
 
 #include "op_main.h"
 
-Operator::Operator(int N, double dt, int Nc, int Ax_size) 
-    : N(N), dt(dt), Nc(Nc), Ax_size(Ax_size)
+#define N_HIST_MAX 100000
+
+Operator::Operator(int N, double dt, int Nc, int Ax_size, bool row_constraints) 
+    : N(N), 
+    dt(dt), 
+    Nc(Nc), 
+    Ax_size(Ax_size), 
+    row_constraints(row_constraints)
 {
     name = "OperatorMain";
 
@@ -24,6 +30,10 @@ Operator::Operator(int N, double dt, int Nc, int Ax_size)
     spec_norm2.setOnes(Nc);
     balanced = true;
     balance_mod.setOnes(Nc);
+
+    hist_check.setZero(Nc, N_HIST_MAX);
+    hist_feas.setZero(Nc, N_HIST_MAX);
+    hist_obj.setZero(Nc, N_HIST_MAX);
 
     x_temp.setZero(N);
     Ax_temp.setZero(Ax_size);
@@ -65,7 +75,7 @@ Operator::Operator(int N, double dt, int Nc, int Ax_size)
 void Operator::allocate_rwvecs()
 {
     int alloc_size;
-    if (Nc == 1) {
+    if (!(row_constraints)) {
         alloc_size = Ax_size;
     } else {
         alloc_size = 1;
@@ -84,7 +94,7 @@ void Operator::reweight()
     for (int ii = 0; ii < Nc; ii++) {
         double rho0 = weight(ii);
 
-        if (Nc == 1) {
+        if (!(row_constraints)) {
             uhat1.array() = U0.array() + rho0*(Y0.array() - s.array());
             duhat.array() = uhat1.array() - Uhat00.array();
             du.array() = U1.array() - U00.array();
@@ -178,7 +188,7 @@ void Operator::reweight()
 
         gamma(ii) = gamma1;
 
-        if (Nc == 1) {
+        if (!(row_constraints)) {
             Uhat00 = uhat1;
             U00 = U1;
             s00 = s;
@@ -192,6 +202,23 @@ void Operator::reweight()
     }
 }
 
+
+void Operator::check(VectorXd &X, int iiter)
+{
+    if ((row_constraints)) {
+        feas_check.array() = (X.array()/balance_mod.array() - target.array()).abs();
+    } else {
+        feas_check(0) = (X.array()/balance_mod(0) - target(0)).abs().maxCoeff();
+    }
+
+    for (int i = 0; i < feas_check.size(); i++) {
+        if (feas_check[i] > tol0[i]) {
+            hist_check(i, iiter) = 1.0;
+        } else {
+            hist_check(i, iiter) = 0.0;
+        }
+    }
+}
 
 void Operator::prep_y(VectorXd &X)
 {   
@@ -213,13 +240,19 @@ void Operator::prox(VectorXd &X)
 {
 }
 
+void Operator::get_obj(VectorXd &X, int iiter)
+{
+}
+
 void Operator::update(VectorXd &X, int iiter)
 {
     forward(X, s, false, 0, false);
 
+    check(s, iiter);
+
     // Is there a better way to handle the single element gamma?  
     // We could switch it back to doubles, but I don't like the type mixing.
-    if (Nc == 1) {
+    if (!(row_constraints)) {
         xbar = gamma(0) * s + (1.0-gamma(0))*Y0;
         Y1 = xbar - U0/weight(0);
     } else {
@@ -229,7 +262,7 @@ void Operator::update(VectorXd &X, int iiter)
 
     prox(Y1);
 
-    if (Nc == 1) {
+    if (!(row_constraints)) {
         U1.array() = U0 + weight(0)*(Y1-xbar);
     } else {
         U1.array() = U0.array() + weight.array()*(Y1.array()-xbar.array());
@@ -244,6 +277,7 @@ void Operator::update(VectorXd &X, int iiter)
     } else {
         r_feas.array() = feas_temp.array()/s.array();
     }
+    hist_feas.col(iiter) = r_feas;
 
     // cout << "Reweighting " << name << "  --  " << weight.transpose() << "  --  " << gamma.transpose() <<endl;
     // Do reweighting of weight and gamma
@@ -270,7 +304,7 @@ void Operator::add2b(VectorXd &b)
     Ax_temp.setZero();
     x_temp.setZero();
     
-    if (Nc == 1) {
+    if (!(row_constraints)) {
         Ax_temp = U0 + weight(0)*Y0;
     } else {
         Ax_temp.array() = U0.array() + weight.array()*Y0.array();

@@ -9,7 +9,7 @@ using namespace std;
 #include "op_gradient.h"
 
 Op_Gradient::Op_Gradient(int N, double dt) 
-    : Operator(N, dt, 1, N)
+    : Operator(N, dt, 1, N, false)
 {
     name = "Gradient"; 
     do_rw = false;

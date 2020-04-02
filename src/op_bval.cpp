@@ -9,7 +9,7 @@ using namespace std;
 #include "op_bval.h"
 
 Op_BVal::Op_BVal(int N, double dt) 
-    : Operator(N, dt, 1, N)
+    : Operator(N, dt, 1, N, false)
 {
     name = "b-value"; 
 
@@ -41,6 +41,7 @@ void Op_BVal::forward(VectorXd &X, VectorXd &out,
     }
 }
 
+
 void Op_BVal::transpose(VectorXd &X, VectorXd &out, 
                            bool apply_weight, int norm)
 {
@@ -68,4 +69,11 @@ void Op_BVal::transpose(VectorXd &X, VectorXd &out,
 
 void Op_BVal::prox(VectorXd &X)
 {
+}
+
+void Op_BVal::get_obj(VectorXd &X, int iiter)
+{
+    Ax_temp.setZero();
+    forward(X, Ax_temp, false, 0, true);
+    hist_obj(0, iiter) = Ax_temp.squaredNorm();
 }
