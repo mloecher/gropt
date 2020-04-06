@@ -23,6 +23,8 @@ class CG_Iter
         VectorXd r;
         VectorXd p;
 
+        vector<int> hist_n_iter;
+
         int N;
         int max_iter;
         double resid_tol;

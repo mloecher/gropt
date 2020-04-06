@@ -28,6 +28,19 @@ class GroptParams
         double gmax;
         double smax;
 
+        int grw_interval;
+        int grw_start;
+        double grw_scale;
+
+        double rw_scalelim;
+        double rw_interval;
+        double rw_eps;
+        double e_corr;
+        double weight_min;
+        double weight_max;
+
+        double cushion;
+
         int N_iter;  // Maximum number of outer iterations
         int N_feval; // Maximum number of function evaluations (includes CG iterations)
 
@@ -36,6 +49,7 @@ class GroptParams
         double cg_abs_tol;
 
         GroptParams();
+        void update_vals();
 };
 
 #endif

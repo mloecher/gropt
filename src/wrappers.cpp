@@ -62,6 +62,9 @@ void python_wrapper_v1(double *params0, double *params1, double **out0, double *
     cout << "N = " << N << endl << endl;
     cout << "ind_inv = " << ind_inv << "  ind_90_end = " << ind_90_end << "  ind_180_start = " << ind_180_start << "  ind_180_end = " << ind_180_end << endl << endl;
 
+    int N_moments = params0[5];
+    double moment_tol = params0[6];
+
     Op_Moments opM(N, dt, 3);
     Op_Slew opS(N, dt);
     Op_Gradient opG(N, dt);
@@ -76,21 +79,30 @@ void python_wrapper_v1(double *params0, double *params1, double **out0, double *
     opB.set_inv_vec(inv_vec);
     opB.set_fixer(fixer);
 
-    // MatrixXd moments(2,7);
-    // moments << 0, 0, 0, 0, 0, 0.0, 1e-6,
-    //            0, 1, 0, 0, 0, 0.0, 1e-6;
+    MatrixXd moments;
+    if (N_moments == 1) {
+        moments.setZero(1,7);
+        moments << 0, 0, 0, 0, 0, 0.0, moment_tol;
+    } else if (N_moments == 2) {
+        moments.setZero(2,7);
+        moments << 0, 0, 0, 0, 0, 0.0, moment_tol,
+                   0, 1, 0, 0, 0, 0.0, moment_tol;
+    } else if (N_moments == 3) {
+        moments.setZero(3,7);
+        moments << 0, 0, 0, 0, 0, 0.0, moment_tol,
+                0, 1, 0, 0, 0, 0.0, moment_tol,
+                0, 2, 0, 0, 0, 0.0, moment_tol;
+    } else {
+        moments.setZero(1,7);
+        moments << 0, 0, 0, 0, 0, 0.0, moment_tol;
+    }
 
-    // MatrixXd moments(1,7);
-    // moments << 0, 0, 0, 0, 0, 0.0, 1e-6;
-
-    MatrixXd moments(3,7);
-    moments << 0, 0, 0, 0, 0, 0.0, 1e-6,
-               0, 1, 0, 0, 0, 0.0, 1e-6,
-               0, 2, 0, 0, 0, 0.0, 1e-6;
+    double gmax = params0[7];
+    double smax = params0[8];
 
     opM.set_params(moments);
-    opS.set_params(100.0);
-    opG.set_params(0.05, set_vals);
+    opS.set_params(smax);
+    opG.set_params(gmax, set_vals);
     opB.weight(0) = -1.0;
 
     vector<Operator*> all_op;
@@ -103,7 +115,7 @@ void python_wrapper_v1(double *params0, double *params1, double **out0, double *
 
     VectorXd X;
     X.setOnes(N);
-    X.array() *= inv_vec.array() * fixer.array() * .005;
+    X.array() *= inv_vec.array() * fixer.array() * gmax/10.0;
 
     GroptParams gparams;
     gparams.N = N;
@@ -114,6 +126,15 @@ void python_wrapper_v1(double *params0, double *params1, double **out0, double *
     gparams.fixer = fixer;
     gparams.set_vals = set_vals;
 
+    gparams.cushion = params0[9];
+    gparams.rw_scalelim = params0[10];
+    gparams.rw_interval = params0[11];
+    gparams.rw_eps = params0[12];
+    gparams.e_corr = params0[13];
+    gparams.weight_min = params0[14];
+    gparams.weight_max = params0[15];
+
+    gparams.update_vals();
 
     VectorXd out;
     optimize(gparams, out);
@@ -127,7 +148,6 @@ void python_wrapper_v1(double *params0, double *params1, double **out0, double *
     *outsize = new int[3];
     outsize[0][0] = N_out0;
 
-    cout << "Final feas " << all_op[2]->feas_check.transpose() << endl << endl;
     cout << "Done python_wrapper_v1!" << endl << endl;
 
 }

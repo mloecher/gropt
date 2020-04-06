@@ -332,3 +332,20 @@ void Operator::set_fixer(VectorXd &fixer_in)
 {
     fixer = fixer_in;
 }
+
+void Operator::change_cushion(double cushion_in)
+{
+    cushion = cushion_in;
+    
+    for (int i = 0; i < tol0.size(); i++) {
+    
+        tol(i) = (1.0-cushion) * tol0(i);
+            
+        if (balanced) {
+            balance_mod(i) = 1.0 / tol(i);
+        } else {
+            balance_mod(i) = 1.0;
+        }
+
+    }
+}

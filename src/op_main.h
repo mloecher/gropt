@@ -88,6 +88,7 @@ class Operator
         virtual void get_obj(VectorXd &X, int iiter);
         virtual void set_inv_vec(VectorXd &inv_vec_in);
         virtual void set_fixer(VectorXd &fixer_in);
+        virtual void change_cushion(double cushion_in);
         
 };
 

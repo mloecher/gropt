@@ -48,7 +48,12 @@ void Op_Moments::set_params(int N_moments, double* moment_params_in)
         target(i) = moment_params(i, 5);
         tol0(i) = moment_params(i, 6);
         tol(i) = (1.0-cushion) * tol0(i);
-        balance_mod(i) = 1.0 / tol(i);
+        
+        if (balanced) {
+            balance_mod(i) = 1.0 / tol(i);
+        } else {
+            balance_mod(i) = 1.0;
+        }
     }
 
     prep_A();

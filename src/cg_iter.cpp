@@ -10,6 +10,8 @@ using namespace std;
 #include "op_main.h"
 #include "cg_iter.h"
 
+#define N_HIST_MAX 100000
+
 void get_Ax(vector<Operator*> all_op, vector<Operator*> all_obj, VectorXd &X, VectorXd &Ax)
 {
     for (int i = 0; i < all_op.size(); i++) {
@@ -84,6 +86,8 @@ VectorXd CG_Iter::do_CG(vector<Operator*> all_op, vector<Operator*> all_obj, Vec
     }
 
     n_iter = ii+1;
+    hist_n_iter.push_back(n_iter);
+    
     return x1;
 }
 
