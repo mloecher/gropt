@@ -1,6 +1,7 @@
 *.mexw64
 *.asv
-*Unititled*.ipynb
+*/*Untitled*.ipynb
+
 __MACOSX/
 
 python/paper/
