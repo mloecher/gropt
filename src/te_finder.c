@@ -119,10 +119,11 @@ void minTE_diff(double **G_out, int *N_out, double **ddebug, int verbose,
     
     if (verbose > 0) {printf ("Search at TE = %.2f gave bval = %.1f  T_range = %.2f\n", TE, bval, T_range);}
 
-    // printf("N_out = %d\n", *N_out);
+    // printf("\nN_out = %d\n", *N_out);
     // for (int i = 0; i < *N_out; i++) {
     //     printf("%.2f ", (*G_out)[i]);
     // }
+    // printf("\n\n");
 }
 
 
@@ -238,25 +239,28 @@ void minTE_diff_par(double **G_out, int *N_out, double **ddebug, int verbose,
                 double T_readout, double T_90, double T_180, int diffmode, double dt_out,
                 int N_eddy, double *eddy_params, double slew_reg)
 {
-    int N_delim, N;
+    int N_delim1, N_delim2, N;
     double T_lo, T_hi;
     double dTE;
     double res[3];
+    double TE_expand = 2.0;
 
-    N_delim = 8;
-    N = 80;
-    T_lo = 1.0;
+    // How many TEs to check with each loop
+    N_delim1 = 12;
+    N_delim2 = 12;
+    N = 64;
+    T_lo = 2.0;
     T_hi = 256.0;
 
     double *G_out_temp;
-    
-    int N_loop1 = 2;
+
+    int N_loop1 = 20; // This is old, now it is set high and the loop breaks when dTE is small enough
     for (int i = 0; i < N_loop1; i++) {
-        minTE_diff_par_worker(res, N_delim, N, T_lo, T_hi, 0, &G_out_temp, N_out, verbose, dt0, gmax, smax, search_bval, 
+        minTE_diff_par_worker(res, N_delim1, N, T_lo, T_hi, 0, &G_out_temp, N_out, verbose, dt0, gmax, smax, search_bval, 
                             N_moments, moments_params, PNS_thresh, 
                                 T_readout, T_90, T_180, diffmode, dt_out, N_eddy, eddy_params, 1.0);
         
-        dTE = (T_hi-T_lo) / (double)(N_delim-1);
+        dTE = (T_hi-T_lo) / (double)(N_delim1-1);
         if (res[1] > 0) {
             T_lo = res[0]-dTE;
             T_hi = res[0];
@@ -264,22 +268,36 @@ void minTE_diff_par(double **G_out, int *N_out, double **ddebug, int verbose,
             T_lo = res[0];
             T_hi = res[0]+dTE;
         }
+        
         free(G_out_temp); // We only need the last one of these, but storing and freeing them shouldnt take too long
+        G_out_temp = NULL; // code laziness, we free a second time later
+
+        // What would the next loop dTE be if we stopped now?
+        double r2dTE = (T_hi - T_lo + TE_expand) / (double)(N_delim2-1);
+
+        if (r2dTE <= (1.0e3*dt0)) {
+            break;
+        } else if (r2dTE < 1.1*TE_expand) {
+            break;
+        }
+        
     }
 
     // Most likely we are increasing N, so out bvals will go up slightly, so reduce T_lo to account for this:
-    if (T_lo > 5.0) {T_lo -= 3.0;}
-
+    if (T_lo > 5.0) {T_lo -= TE_expand;}
     
     // This second set of loops used the native dt
     
-    int N_loop2 = 2;
+    int N_loop2 = 20; // This is old, now it is set high and the loop breaks when dTE is less than dt0
     for (int i = 0; i < N_loop2; i++) {
-        minTE_diff_par_worker(res, N_delim, N, T_lo, T_hi, 1, &G_out_temp, N_out, verbose, dt0, gmax, smax, search_bval, 
+        free(G_out_temp);
+        
+        minTE_diff_par_worker(res, N_delim2, N, T_lo, T_hi, 1, &G_out_temp, N_out, verbose, dt0, gmax, smax, search_bval, 
                               N_moments, moments_params, PNS_thresh, 
                               T_readout, T_90, T_180, diffmode, dt_out, N_eddy, eddy_params, 1.0);       
         
-        dTE = (T_hi-T_lo) / (double)(N_delim-1);
+        dTE = (T_hi-T_lo) / (double)(N_delim2-1);
+        
         if (res[1] > 0) {
             T_lo = res[0]-dTE;
             T_hi = res[0];
@@ -288,18 +306,17 @@ void minTE_diff_par(double **G_out, int *N_out, double **ddebug, int verbose,
             T_hi = res[0]+dTE;
         }
         
-        if (i < (N_loop2-1)) {
-            free(G_out_temp);
-        } else {
-            *G_out = G_out_temp;
-        }
+        *G_out = G_out_temp;
 
+        if (dTE <= (2.0e3*dt0)) {
+            break;
+        }
     }
 
-    // printf("N_out = %d\n", *N_out);
+    // printf("\nN_out = %d\n", *N_out);
     // for (int i = 0; i < *N_out; i++) {
     //     printf("%.2f ", (*G_out)[i]);
     // }
-
+    // printf("\n\n");
 
 }
