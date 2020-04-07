@@ -1,5 +1,5 @@
 %%
-src_files_base = {'cvx_matrix.c'; 'op_gradient.c'; 'op_bval.c'; 'op_beta.c'; 'op_slewrate.c'; 'op_moments.c'; 'op_eddy.c'; 'op_pns.c'; 'op_maxwell.c'};
+src_files_base = {'cvx_matrix.c'; 'op_gradient.c'; 'op_bval.c'; 'op_beta.c'; 'op_slewrate.c'; 'op_moments.c'; 'op_eddy.c'; 'op_pns.c'; 'op_maxwell.c'; 'te_finder.c'};
 %%
 
 src_files = sprintf('../src/%s ' ,src_files_base{:});
