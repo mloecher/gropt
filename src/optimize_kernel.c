@@ -53,11 +53,13 @@
 #include "op_gradient.h"
 #include "op_pns.h"
 #include "op_maxwell.h"
+#include "te_finder.h"
+
 
 #define EDDY_PARAMS_LEN 4
 #define MOMENTS_PARAMS_LEN 7
 
-void test_minTE_diff();
+void test_TE_finders();
 void test_timer();
 
 void cvx_optimize_kernel(cvx_mat *G, cvxop_gradient *opG, cvxop_slewrate *opD, 
@@ -780,128 +782,19 @@ void run_kernel_diff_fixeddt_fixG(double **G_out, int *N_out, double **ddebug, i
 }
 
 
-void minTE_diff(double **G_out, int *N_out, double **ddebug, int verbose,
-                double dt0, double gmax, double smax, double search_bval,
-                int N_moments, double *moments_params, double PNS_thresh, 
-                double T_readout, double T_90, double T_180, int diffmode, double dt_out,
-                int N_eddy, double *eddy_params, double slew_reg)
-{
-    int N;
-    double TE;
-    double dt;
-    double bval;
-    double best_TE = 999.0;
-
-    double T_lo = 0.0;
-    double T_hi = 256.0;
-    double T_range = T_hi-T_lo;
-
-    // double dt = (TE-T_readout) * 1.0e-3 / (double) N;
-    // double dt = dt0;
-
-    N = 80;
-    
-    for (int i = 0; i < 6; i++) {
-        TE = T_lo + (T_range)/2.0;
-        dt = (TE-T_readout) * 1.0e-3 / (double) N;
-        
-        run_kernel_diff(G_out, N_out, ddebug, verbose,
-                        N, dt, gmax, smax, TE, 
-                        N_moments, moments_params, PNS_thresh,
-                        T_readout, T_90, T_180, diffmode,
-                        1.0, 1.0, 100.0, 
-                        10.0,  dt_out,
-                        N_eddy, eddy_params,
-                        0, NULL, search_bval,
-                        0, NULL, slew_reg, 1);
-        bval = (*ddebug)[13];
-        
-        if (verbose > 0) {printf ("Search at TE = %.2f gave bval = %.1f  T_range = %.2f\n", TE, bval, T_range);}
-        if (bval > search_bval) {
-            T_hi = TE;
-            if (T_hi < best_TE) {
-                best_TE = T_hi;
-                if (verbose > 0) {printf ("Best TE = %.2f\n", best_TE);}
-            }
-        } else {
-            T_lo = TE;
-        }
-        T_range = T_hi - T_lo;
-        
-    }
-    
-    if (verbose > 0) {printf ("\n***Second Round***\n\n");}
-
-
-    T_lo = best_TE - 4.0;
-    T_hi = best_TE + 4.0;
-    T_range = T_hi-T_lo;
-
-    dt = dt0;
-
-    for (int i = 0; i < 6; i++) {
-        TE = T_lo + (T_range)/2.0;
-        N = round((TE-T_readout) * 1.0e-3/dt0);
-        
-        run_kernel_diff(G_out, N_out, ddebug, verbose,
-                        N, dt, gmax, smax, TE, 
-                        N_moments, moments_params, PNS_thresh,
-                        T_readout, T_90, T_180, diffmode,
-                        1.0, 1.0, 100.0, 
-                        10.0,  dt_out,
-                        N_eddy, eddy_params,
-                        0, NULL, search_bval,
-                        0, NULL, slew_reg, 1);
-        bval = (*ddebug)[13];
-        
-        if (verbose > 0) {printf ("Search at TE = %.2f gave bval = %.1f  T_range = %.2f\n", TE, bval, T_range);}
-        if (bval > search_bval) {
-            T_hi = TE;
-            if (T_hi < best_TE) {
-                best_TE = T_hi;
-                if (verbose > 0) {printf ("Best TE = %.2f\n", best_TE);}
-            }
-        } else {
-            T_lo = TE;
-        }
-        T_range = T_hi - T_lo;
-        
-    }
-
-    if (verbose > 0) {printf ("\n***Final***\n\n");}
-
-    TE = best_TE;
-    N = round((TE-T_readout) * 1.0e-3/dt0);
-    
-    run_kernel_diff(G_out, N_out, ddebug, verbose,
-                    N, dt, gmax, smax, TE, 
-                    N_moments, moments_params, PNS_thresh,
-                    T_readout, T_90, T_180, diffmode,
-                    1.0, 1.0, 100.0, 
-                    10.0,  dt_out,
-                    N_eddy, eddy_params,
-                    0, NULL, -1.0,
-                    0, NULL, slew_reg, 1);
-    bval = (*ddebug)[13];
-    
-    if (verbose > 0) {printf ("Search at TE = %.2f gave bval = %.1f  T_range = %.2f\n", TE, bval, T_range);}
-}
-
-
-
-
 int main (void)
 {
     printf ("In optimize_kernel.c main function\n");
     
-    test_timer();
-    // test_minTE_diff();
-
+    // test_timer();
+    test_TE_finders();
     return 0;
 }
 
 
-void test_minTE_diff()
+// This example shows the fast TE finders, which can scan different TE values quickly by
+// performing quick initial searches and using multiple threads to seach multiple TE at once
+void test_TE_finders()
 {
     // 1 = betamax
     // 2 = bval max
@@ -916,24 +809,12 @@ void test_minTE_diff()
 
     int N_moments = 3; 
     double *moment_params = (double *)malloc(N_moments*7*sizeof(double));
-    
-    // M0 Nulling
-    int ii = 0;
-    moment_params[ii+0] = 0; moment_params[ii+1] = 0; moment_params[ii+2] = 0; 
-    moment_params[ii+3] = -1; moment_params[ii+4] = -1; 
-    moment_params[ii+5] = 0; moment_params[ii+6] = 1.0e-3;
-    
-    // M1 Nulling
-    ii = 7;
-    moment_params[ii+0] = 0; moment_params[ii+1] = 1; moment_params[ii+2] = 0; 
-    moment_params[ii+3] = -1; moment_params[ii+4] = -1; 
-    moment_params[ii+5] = 0; moment_params[ii+6] = 1.0e-3;
-
-    // M2 Nulling
-    ii = 14;
-    moment_params[ii+0] = 0; moment_params[ii+1] = 2; moment_params[ii+2] = 0; 
-    moment_params[ii+3] = -1; moment_params[ii+4] = -1; 
-    moment_params[ii+5] = 0; moment_params[ii+6] = 1.0e-3;
+    for (int i = 0; i < N_moments; i++) {
+        int ii = i*7;
+        moment_params[ii+0] = 0; moment_params[ii+1] = i; moment_params[ii+2] = 0; 
+        moment_params[ii+3] = -1; moment_params[ii+4] = -1; 
+        moment_params[ii+5] = 0; moment_params[ii+6] = 1.0e-3;
+    }
 
     double PNS_thresh = -1.0;
 
@@ -952,19 +833,31 @@ void test_minTE_diff()
 
     struct timeval start, end;
     double diff;
-    gettimeofday(&start, NULL);
 
+
+    // openMP TE finder example
+    gettimeofday(&start, NULL);
+    minTE_diff_par(&G, &N, &debug, 0, dt, gmax, smax, bval, 
+                        N_moments, moment_params, PNS_thresh, 
+                            T_readout, T_90, T_180, diffmode, dt_out, N_eddy, eddy_params, 1.0);
+
+    gettimeofday(&end, NULL);
+    diff = (end.tv_sec - start.tv_sec) + 1.0e-6 * (end.tv_usec - start.tv_usec);
+    printf("OpenMP operation took %.2f ms (TE = %.2f ms)\n", (1.0e3*diff), 1.0e3*N*dt);
+
+
+    // Single thread TE finder example
+    gettimeofday(&start, NULL);
     minTE_diff(&G, &N, &debug, 0, dt, gmax, smax, bval, 
                         N_moments, moment_params, PNS_thresh, 
                             T_readout, T_90, T_180, diffmode, dt_out, N_eddy, eddy_params, 1.0);
 
     gettimeofday(&end, NULL);
     diff = (end.tv_sec - start.tv_sec) + 1.0e-6 * (end.tv_usec - start.tv_usec);
-    printf("\nOperation took %f ms (%f ms total)\n", (1.0e3*diff), 1.0e3*diff);
+    printf("Non-threaded operation took %.2f ms (TE = %.2f ms)\n", (1.0e3*diff), 1.0e3*N*dt);
 
     return;
 }
-
 
 void test_timer()
 {

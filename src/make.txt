@@ -1,1 +1,1 @@
-gcc -O3 cvx_matrix.c op_gradient.c op_bval.c op_eddy.c op_beta.c op_slewrate.c op_moments.c op_pns.c op_maxwell.c optimize_kernel.c -o opt -lm
+gcc -O3 te_finder.c cvx_matrix.c op_gradient.c op_bval.c op_eddy.c op_beta.c op_slewrate.c op_moments.c op_pns.c op_maxwell.c optimize_kernel.c -o opt -lm -fopenmp

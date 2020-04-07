@@ -21,11 +21,13 @@ A toolbox for MRI Gradient Optimization (GrOpt)
 
 ## Updates
 
-#### March 23, 2020
+#### ----
+ * OpenMP version of TE finder is better implemented. See demo in the `test_TE_finder` function of src/optimize_kernel.c, which will call multiple GrOpt evals simultaneously to find the shortest feasible TE.
+#### ----
  * AR-SDMM solver is in its own branch (arsdmm), currently merging 
-#### Feb 10, 2020
+#### ----
  * Added minTE_finder in src/optimize_kernel.c (minTE_diff function) to more efficiently fine the minimum TE
- * Added simultaneuous axis optimization, contorlled with Naxis argument to optimize calls
+ * Added simultaneuous axis optimization, contorlled with `Naxis` argument to optimize calls
 
 
 ## Installation
