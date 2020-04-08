@@ -153,6 +153,125 @@ void python_wrapper_v1(double *params0, double *params1, double **out0, double *
 }
 
 
+// This exactly matches the function call of the old gropt function "run_kernel_diff_fixeddt"
+void gropt_legacy(double **G_out, int *N_out, double **ddebug, int verbose, 
+                  double dt0, double gmax, double smax, double TE, 
+                  int N_moments, double *moments_params, double PNS_thresh, 
+                  double T_readout, double T_90, double T_180, int diffmode, double dt_out,
+                  int N_eddy, double *eddy_params, double search_bval, double slew_reg, int Naxis)
+{
+    double dt = dt0;
+    int N = (int)((TE-T_readout)/dt) + 1;
+
+    int ind_inv = (int)(TE/2.0/dt);
+    VectorXd inv_vec;
+    inv_vec.setOnes(N);
+    for(int i = ind_inv; i < N; i++) {
+        inv_vec(i) = -1.0;
+    }
+
+    int ind_90_end = ceil(T_90/dt);
+    int ind_180_start = floor((TE/2.0 - T_180/2.0)/dt);
+    int ind_180_end = ceil((TE/2.0 + T_180/2.0)/dt);
+
+
+    VectorXd set_vals;
+    set_vals.setOnes(N);
+    set_vals.array() *= -9999999.0;
+    for(int i = 0; i <= ind_90_end; i++) {
+        set_vals(i) = 0.0;
+    }
+    for(int i = ind_180_start; i <= ind_180_end; i++) {
+        set_vals(i) = 0.0;
+    }
+    set_vals(0) = 0.0;
+    set_vals(N-1) = 0.0;
+
+
+    VectorXd fixer;
+    fixer.setOnes(N);
+    for(int i = 0; i < N; i++) {
+        if (set_vals(i) > -10000) {
+            fixer(i) = 0.0;
+        }
+    }
+
+    cout << "N = " << N << endl << endl;
+    cout << "ind_inv = " << ind_inv << "  ind_90_end = " << ind_90_end << "  ind_180_start = " << ind_180_start << "  ind_180_end = " << ind_180_end << endl << endl;
+
+
+    Op_Moments opM(N, dt, N_moments);
+    Op_Slew opS(N, dt);
+    Op_Gradient opG(N, dt);
+    Op_BVal opB(N, dt);
+
+    opM.set_inv_vec(inv_vec);
+    opM.set_fixer(fixer);
+    opS.set_inv_vec(inv_vec);
+    opS.set_fixer(fixer);
+    opG.set_inv_vec(inv_vec);
+    opG.set_fixer(fixer);
+    opB.set_inv_vec(inv_vec);
+    opB.set_fixer(fixer);
+
+    MatrixXd moments;
+    moments.setZero(N_moments,7);
+    for (int i = 0; i < N_moments; i++) {
+        for (int j = 0; j < 7; j++) {
+            moments(i,j) = moments_params[j + i*7];
+        }
+    }
+
+
+    opM.set_params(moments);
+    opS.set_params(smax);
+    opG.set_params(gmax, set_vals);
+    opB.weight(0) = -1.0;
+
+    vector<Operator*> all_op;
+    all_op.push_back(&opG);
+    all_op.push_back(&opS);
+    all_op.push_back(&opM);
+
+    vector<Operator*> all_obj;
+    all_obj.push_back(&opB);
+
+    VectorXd X;
+    X.setOnes(N);
+    X.array() *= inv_vec.array() * fixer.array() * gmax/10.0;
+
+    GroptParams gparams;
+    gparams.N = N;
+    gparams.X0 = X;
+    gparams.all_op = all_op; 
+    gparams.all_obj = all_obj;
+    gparams.inv_vec = inv_vec;
+    gparams.fixer = fixer;
+    gparams.set_vals = set_vals;
+    
+    gparams.update_vals();
+
+    VectorXd out;
+    optimize(gparams, out);
+
+    int N_out0 = out.size();
+    *G_out = new double[N_out0];
+    for(int i = 0; i < N_out0; i++) {
+        G_out[0][i] = out(i);
+    }
+
+    *N_out = N_out0;
+
+    int N_ddebug = 100;
+    *ddebug = new double[N_ddebug];
+    for(int i = 0; i < N_ddebug; i++) {
+        ddebug[0][i] = 0.0;
+    }
+
+    cout << "Done gropt_legacy!" << endl << endl;
+
+}
+
 int main()
 {
     return 0;
