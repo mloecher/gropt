@@ -246,8 +246,8 @@ void minTE_diff_par(double **G_out, int *N_out, double **ddebug, int verbose,
     double TE_expand = 2.0;
 
     // How many TEs to check with each loop
-    N_delim1 = 12;
-    N_delim2 = 12;
+    N_delim1 = 8;
+    N_delim2 = 8;
     N = 64;
     T_lo = 2.0;
     T_hi = 256.0;
