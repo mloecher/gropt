@@ -220,6 +220,41 @@ void Operator::check(VectorXd &X, int iiter)
     }
 }
 
+// This resets all of the vectors, but keeps the parameters in place
+void Operator::init(VectorXd &X)
+{   
+    weight.setOnes();
+    gamma.setOnes();
+    
+    hist_check.setZero();
+    hist_feas.setZero();
+    hist_obj.setZero();
+
+    x_temp.setZero();
+    Ax_temp.setZero();
+
+    Y0.setZero();
+    Y1.setZero();
+    U0.setZero();
+    U1.setZero();
+
+    s.setZero();
+    xbar.setZero();
+
+    Uhat00.setZero();
+    U00.setZero();
+    s00.setZero();
+    Y00.setZero();
+    
+    uhat1.setZero();
+    duhat.setZero();
+    du.setZero();
+    dhhat.setZero();
+    dghat.setZero();
+    
+    prep_y(X);
+}
+
 void Operator::prep_y(VectorXd &X)
 {   
     forward(X, Y0, false, 0, false);

@@ -75,5 +75,7 @@ void Op_BVal::get_obj(VectorXd &X, int iiter)
 {
     Ax_temp.setZero();
     forward(X, Ax_temp, false, 0, true);
-    hist_obj(0, iiter) = Ax_temp.squaredNorm();
+    current_obj = Ax_temp.squaredNorm();
+    hist_obj(0, iiter) = current_obj;
+    
 }

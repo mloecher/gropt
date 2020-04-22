@@ -73,6 +73,8 @@ class Operator
         MatrixXd hist_check;
         MatrixXd hist_feas;
         MatrixXd hist_obj;
+
+        double current_obj;
         
         Operator(int N, double dt, int Nc, int Ax_size, bool row_constraints);
         void allocate_rwvecs();    
@@ -80,6 +82,7 @@ class Operator
         void update(VectorXd &X, int iiter);
         void add2b(VectorXd &b);
         void add2AtAx(VectorXd &X, VectorXd &out);
+        virtual void init(VectorXd &X); 
         virtual void prep_y(VectorXd &X); 
         virtual void forward(VectorXd &X, VectorXd &out, bool apply_weight, int norm, bool no_balance);
         virtual void transpose(VectorXd &X, VectorXd &out, bool apply_weight, int norm);

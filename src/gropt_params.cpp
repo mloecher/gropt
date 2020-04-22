@@ -21,6 +21,8 @@ GroptParams::GroptParams() {
     e_corr = 0.5;
     weight_min = 1.0e-4;
     weight_max = 1.0e64;
+
+    d_obj_thresh = 1e-4;
 }
 
 void GroptParams::update_vals()
@@ -34,4 +36,26 @@ void GroptParams::update_vals()
         all_op[i]->weight_min = weight_min;
         all_op[i]->weight_max = weight_max;
     }
+}
+
+void GroptParams::defaults_diffusion()
+{
+    rw_scalelim = 1.5;
+    rw_interval = 16;
+    rw_eps = 1.0e-16;
+
+    grw_interval = 8;
+    grw_start = 400;
+    grw_scale = 2.0;
+
+    cg_niter = 10000;
+    cg_resid_tol = 1.0e-3;
+    cg_abs_tol = 1.0e-16;
+
+    e_corr = 0.5;
+    weight_min = 1.0e-4;
+    weight_max = 1.0e64;
+    d_obj_thresh = 1e-4;
+
+    update_vals();
 }

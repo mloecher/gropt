@@ -38,6 +38,7 @@ extensions = [Extension("gropt",
                 include_dirs = include_dirs,
                 library_dirs = library_dirs,
                 extra_compile_args = extra_compile_args,
+                # undef_macros=['NDEBUG'], # This will re-enable the Eigen assertions
             )]
 
 setup(

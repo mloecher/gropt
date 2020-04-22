@@ -10,15 +10,6 @@
 
 using namespace Eigen;
 
-class OptHist
-{
-    public:
-        VectorXd check_hist;
-        VectorXd obj_hist;
-
-        OptHist(GroptParams &gparams);
-};
-
 void optimize(GroptParams &gparams, VectorXd &out);
 
 #endif

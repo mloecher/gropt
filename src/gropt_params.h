@@ -48,8 +48,14 @@ class GroptParams
         double cg_resid_tol;
         double cg_abs_tol;
 
+        double d_obj_thresh;
+
+        double total_n_feval;
+        int last_iiter;
+
         GroptParams();
         void update_vals();
+        void defaults_diffusion();
 };
 
 #endif
