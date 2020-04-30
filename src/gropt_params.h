@@ -53,9 +53,15 @@ class GroptParams
         double total_n_feval;
         int last_iiter;
 
+        bool do_init;
+        int verbose;
+
         GroptParams();
+        ~GroptParams();
         void update_vals();
+        void set_vecs();
         void defaults_diffusion();
+        void interp_from_gparams(GroptParams &gparams, VectorXd &X_in);
 };
 
 #endif

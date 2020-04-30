@@ -6,6 +6,7 @@ using namespace std;
 
 #define N_HIST_TEMP 20
 
+// This is an old and simpler reweighting function that just ups the weight on every constraint that hasn't passed its check
 void do_globalreweight_simple(GroptParams &gparams, int iiter)
 {
     int grw_interval = 10;
@@ -29,6 +30,7 @@ void do_globalreweight_simple(GroptParams &gparams, int iiter)
     }
 }
 
+// Reweight the 'worst' constraint, based on the r_feas value from the PAR-SDMM paper
 void do_globalreweight(GroptParams &gparams, int iiter)
 {
     int grw_interval = gparams.grw_interval;
@@ -39,28 +41,24 @@ void do_globalreweight(GroptParams &gparams, int iiter)
     double max_feas = -1.0;
     double feas;
     
-    // Only reweight worst r_feas
+    // Find the worst r_feas (search each constraint, and sub-constraints if applicable (such as in moments))
     if ((iiter > grw_start) && (iiter%grw_interval==0)) {
         
-        // cout << "Global Reweight iiter = " << iiter << endl;
         for (int i = 0; i < gparams.all_op.size(); i++) {
-            // cout << "   Name: " << gparams.all_op[i]->name << "   " << gparams.all_op[i]->do_rw << "  ";
             for (int j = 0; j < gparams.all_op[i]->hist_check.col(iiter).size(); j++) {
-                // cout << "  --  " << gparams.all_op[i]->hist_check(j,iiter) << "  " << gparams.all_op[i]->hist_feas(j,iiter);
                 if ((gparams.all_op[i]->do_rw) && (gparams.all_op[i]->hist_check(j,iiter) > 0)) {
                     feas = gparams.all_op[i]->hist_feas(j,iiter);
                     if (feas > max_feas) {
                         max_feas = feas;
-                        max_i = i;
-                        max_j = j;
+                        max_i = i; // Constraint index
+                        max_j = j; // Sub constraint index
                     }
                 }
             }
-            // cout << endl;
         }
 
+        // Apply the weight scaling
         if (max_i >= 0) {
-            // cout << "Reweighting  " << max_i << " " << max_j << " " << max_feas << endl;
             gparams.all_op[max_i]->weight(max_j) *= gparams.grw_scale;
         }
 
@@ -91,12 +89,18 @@ int do_checks(GroptParams &gparams, int iiter, VectorXd &X)
         all_check += gparams.all_op[i]->hist_check.col(iiter).sum();
     }
 
-    if ((max_diff < gparams.d_obj_thresh) && (all_check < 0.5)) {
-        cout << "Done do_check Iter = " << iiter << "  " << current_obj << "  " << max_diff << "  " << all_check << endl;
+    // cout << "    do_check Iter = " << iiter << "  " << current_obj << "  " << max_diff << "  " << all_check << endl;
+
+    if ((max_diff < gparams.d_obj_thresh) && (all_check < 0.5)  && (iiter > 0)) {
+        if (gparams.verbose > 0) {
+            cout << "optimize.cpp do_checks() passed!  iiter = " << iiter << "  " << current_obj << "  " << max_diff << "  " << all_check << endl;
+        }
         return 1;
     } else {
         return 0;
     }
+
+
 }
 
 void optimize(GroptParams &gparams, VectorXd &out)
@@ -109,10 +113,17 @@ void optimize(GroptParams &gparams, VectorXd &out)
     CG_Iter cg(gparams.N, gparams.cg_niter, 
                 gparams.cg_resid_tol, gparams.cg_abs_tol);
 
-    // Compute Y0 = Ax for all operators
+
     for (int i = 0; i < gparams.all_op.size(); i++) {
-        gparams.all_op[i]->init(X);
+        gparams.all_op[i]->init(X, gparams.do_init);
     }
+
+    // cout << endl << "***" << endl;
+    // for (int i = 0; i < gparams.all_op.size(); i++) {
+    //     cout << gparams.all_op[i]->name << "  --  " << gparams.all_op[i]->U0.squaredNorm() << "  --  " << 
+    //     gparams.all_op[i]->Y0.squaredNorm() << "  --  " << gparams.all_op[i]->weight.transpose() << endl;
+    // }
+    // cout << "***" << endl << endl;
 
     // Actual iterations
     for (int iiter = 0; iiter < gparams.N_iter; iiter++) {
@@ -122,7 +133,7 @@ void optimize(GroptParams &gparams, VectorXd &out)
         // Do CG iterations
         X = cg.do_CG(gparams.all_op, gparams.all_obj, X);
 
-        // Update all constraints        
+        // Update all constraints (do prox operations)        
         for (int i = 0; i < gparams.all_op.size(); i++) {
             gparams.all_op[i]->update(X, iiter);
         }
@@ -141,15 +152,56 @@ void optimize(GroptParams &gparams, VectorXd &out)
         do_globalreweight(gparams, iiter);
     }
 
+    // Calculate the total number of CG iterations that were used
     int n_feval = 0;
     for (int i = 0; i < cg.hist_n_iter.size(); i++) {
         n_feval += cg.hist_n_iter[i];
     }
 
-    cout << "Final n_feval = " << n_feval << endl;
-
     out = X;
     gparams.total_n_feval = n_feval;
 
     return;
+}
+
+// Interp one vector to another based only on its size
+// The first and last points match up exactly, and then everything is linearly interpolated
+void interp_vec2vec(VectorXd &vec0, VectorXd &vec1) {
+    int N0 = vec0.size();
+    int N1 = vec1.size();
+    
+    if (N0 == N1) {
+        vec1 = vec0;
+        return;
+    }
+
+    double tt;
+    double di0;
+    int i0_lo, i0_hi;
+    double v_lo, v_hi;
+    double d_lo, d_hi;
+
+    for (int i1 = 0; i1 < N1; i1++) {
+        
+        tt = (double)i1 / (N1-1);
+        
+        di0 = tt * (N0-1);
+        i0_lo = floor(di0);
+        if (i0_lo < 0) {i0_lo = 0;}  // This shouldn't happen unless some weird rounding and floor?
+        i0_hi = i0_lo + 1;
+
+        if (i0_hi < N0) {
+            d_lo = fabs(di0-i0_hi);
+            d_hi = 1.0 - d_lo;
+
+            v_lo = d_lo * vec0(i0_lo);
+            v_hi = d_hi * vec0(i0_hi);
+
+            vec1(i1) = v_lo + v_hi;
+        } else {
+            d_lo = fabs(di0-i0_hi);
+            v_lo = d_lo * vec0(i0_lo);
+            vec1(i1) = v_lo;
+        }
+    }
 }

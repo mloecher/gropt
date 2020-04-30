@@ -49,10 +49,11 @@ def gropt2(params0, verbose=0):
     for i in range(outsize[1]):
         debug_return[i] = out1[i]
 
-    # print('Outsize0 =', outsize[0])
-    # print(G_return)
+    interp_return = np.empty(outsize[2])
+    for i in range(outsize[2]):
+        interp_return[i] = out2[i]
 
-    return G_return, debug_return
+    return G_return, debug_return, interp_return
 
 @cython.boundscheck(False) 
 @cython.wraparound(False)

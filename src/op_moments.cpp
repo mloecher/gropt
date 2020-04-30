@@ -27,12 +27,38 @@ void Op_Moments::prep_A()
     for(int i = 0; i < Nc; i++) {
         for(int j = 0; j < N; j++) {
             double order = moment_params(i, 1);
-            double val = 1000.0 * 1000.0 * dt * pow( (1000.0 * (dt*j + ref0)), order );
+            double val = 1000.0 * 1000.0 * dt * pow( (1000.0 * (dt*j + ref0)), order);
             
             A(i, j) = val * inv_vec(j);
             spec_norm2(i) += val*val;
         }
     }
+}
+
+// This is a special case where moments must be zero (for diffusion)
+void Op_Moments::set_params_zeros(int N_moments, double moment_tol)
+{
+    if (Nc != N_moments) {
+        cout << "ERROR: Nc not equal to N_moments in Op_Moments";
+    }
+
+    for(int i = 0; i < Nc; i++) {
+        
+        moment_params(i, 1) = (double)i;
+        moment_params(i, 6) = moment_tol;
+
+        target(i) = moment_params(i, 5);
+        tol0(i) = moment_params(i, 6);
+        tol(i) = (1.0-cushion) * tol0(i);
+        
+        if (balanced) {
+            balance_mod(i) = 1.0 / tol(i);
+        } else {
+            balance_mod(i) = 1.0;
+        }
+    }
+
+    prep_A();
 }
 
 void Op_Moments::set_params(int N_moments, double* moment_params_in)
@@ -134,4 +160,11 @@ void Op_Moments::prox(VectorXd &X)
         X(i) = X(i) < lower_bound ? lower_bound:X(i);
         X(i) = X(i) > upper_bound ? upper_bound:X(i);
     }
+}
+
+// Overload because A needs to be recomputed
+void Op_Moments::set_inv_vec(VectorXd &inv_vec_in)
+{
+    inv_vec = inv_vec_in;
+    prep_A();
 }

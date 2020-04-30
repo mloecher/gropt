@@ -18,12 +18,14 @@ class Op_Moments : public Operator
         VectorXd mod;
 
         Op_Moments(int N, double dt, int Nc);
+        virtual void set_params_zeros(int N_moments, double moment_tol);
         virtual void set_params(int N_moments, double* moment_params);
         virtual void set_params(MatrixXd &moment_params_in);
         virtual void forward(VectorXd &X, VectorXd &out, bool apply_weight, int norm, bool no_balance);
         virtual void transpose(VectorXd &X, VectorXd &out, bool apply_weight, int norm);
         virtual void prep_A();
         virtual void prox(VectorXd &X);
+        virtual void set_inv_vec(VectorXd &inv_vec_in);
 
 };
 

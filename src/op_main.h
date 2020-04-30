@@ -82,7 +82,9 @@ class Operator
         void update(VectorXd &X, int iiter);
         void add2b(VectorXd &b);
         void add2AtAx(VectorXd &X, VectorXd &out);
-        virtual void init(VectorXd &X); 
+        virtual void init(VectorXd &X, bool do_init); 
+        virtual void soft_init(VectorXd &X);
+        // virtual void soft_init_2(VectorXd &X);
         virtual void prep_y(VectorXd &X); 
         virtual void forward(VectorXd &X, VectorXd &out, bool apply_weight, int norm, bool no_balance);
         virtual void transpose(VectorXd &X, VectorXd &out, bool apply_weight, int norm);

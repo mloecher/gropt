@@ -220,11 +220,13 @@ void Operator::check(VectorXd &X, int iiter)
     }
 }
 
-// This resets all of the vectors, but keeps the parameters in place
-void Operator::init(VectorXd &X)
+// This is for warm starting (many vecotrs shoudl not be zero here, they are previously computed)
+// From trial and error all we really need is U0, weights and gamma to carry over.
+// Y0 needs to be carried over, or reinitialized from X0, I am not sure which works better yet.
+void Operator::soft_init(VectorXd &X)
 {   
-    weight.setOnes();
-    gamma.setOnes();
+    // weight.setOnes();
+    // gamma.setOnes();
     
     hist_check.setZero();
     hist_feas.setZero();
@@ -233,9 +235,9 @@ void Operator::init(VectorXd &X)
     x_temp.setZero();
     Ax_temp.setZero();
 
-    Y0.setZero();
+    // Y0.setZero();
     Y1.setZero();
-    U0.setZero();
+    // U0.setZero();
     U1.setZero();
 
     s.setZero();
@@ -252,7 +254,46 @@ void Operator::init(VectorXd &X)
     dhhat.setZero();
     dghat.setZero();
     
-    prep_y(X);
+    // prep_y(X);
+}
+
+// This resets all of the vectors, but keeps the parameters in place
+void Operator::init(VectorXd &X, bool do_init)
+{   
+    if (!do_init) {
+        soft_init(X);
+    } else {
+        weight.setOnes();
+        gamma.setOnes();
+        
+        hist_check.setZero();
+        hist_feas.setZero();
+        hist_obj.setZero();
+
+        x_temp.setZero();
+        Ax_temp.setZero();
+
+        Y0.setZero();
+        Y1.setZero();
+        U0.setZero();
+        U1.setZero();
+
+        s.setZero();
+        xbar.setZero();
+
+        Uhat00.setZero();
+        U00.setZero();
+        s00.setZero();
+        Y00.setZero();
+        
+        uhat1.setZero();
+        duhat.setZero();
+        du.setZero();
+        dhhat.setZero();
+        dghat.setZero();
+        
+        prep_y(X);
+    }
 }
 
 void Operator::prep_y(VectorXd &X)

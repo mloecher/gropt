@@ -2,7 +2,6 @@
 #define OPTIMIZE_H
 
 #include <iostream>
-#include <chrono> 
 #include <vector>
 #include <Eigen/Dense>
 
@@ -11,5 +10,6 @@
 using namespace Eigen;
 
 void optimize(GroptParams &gparams, VectorXd &out);
+void interp_vec2vec(VectorXd &vec0, VectorXd &vec1); 
 
 #endif
