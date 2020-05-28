@@ -45,7 +45,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     double slew_reg = mxGetScalar(prhs[12]);
     
     run_kernel_diff_fixeddt(&G, &N, &ddebug, verbose, dt, gmax, smax, TE, N_moments, moment_params, pns_thresh, 
-            T_readout, T_90, T_180, diffmode, dt_out, N_eddy, eddy_params, -1.0, slew_reg);
+            T_readout, T_90, T_180, diffmode, dt_out, N_eddy, eddy_params, -1.0, slew_reg, 1);
     
 
     plhs[0] = mxCreateDoubleMatrix(1,N,mxREAL);
