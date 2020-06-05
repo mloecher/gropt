@@ -16,7 +16,7 @@ class Op_Gradient : public Operator
         VectorXd set_vals;
 
     public:
-        Op_Gradient(int N, double dt);
+        Op_Gradient(int N, int Naxis, double dt);
         virtual void set_params(double gmax_in);
         virtual void set_params(double gmax_in, VectorXd &set_vals_in);
         virtual void forward(VectorXd &X, VectorXd &out, bool apply_weight, int norm, bool no_balance);

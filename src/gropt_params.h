@@ -23,7 +23,8 @@ class GroptParams
         VectorXd X0;
 
         double dt;
-        double N;
+        int N;
+        int Naxis;
 
         double gmax;
         double smax;
@@ -55,6 +56,9 @@ class GroptParams
 
         bool do_init;
         int verbose;
+        int verbose_int;
+
+        int final_good;
 
         GroptParams();
         ~GroptParams();

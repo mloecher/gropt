@@ -14,9 +14,12 @@ class Op_BVal : public Operator
     protected:
         double GAMMA;
         double MAT_SCALE;
+        double bval0;
 
     public:
-        Op_BVal(int N, double dt);
+        Op_BVal(int N, int Naxis, double dt);
+        void set_params(double bval_in);
+        void check(VectorXd &X, int iiter);
         virtual void forward(VectorXd &X, VectorXd &out, bool apply_weight, int norm, bool no_balance);
         virtual void transpose(VectorXd &X, VectorXd &out, bool apply_weight, int norm);
         virtual void prox(VectorXd &X);

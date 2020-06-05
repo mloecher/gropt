@@ -65,38 +65,107 @@ void do_globalreweight(GroptParams &gparams, int iiter)
     }
 }
 
+void logger(GroptParams &gparams, int iiter, VectorXd &X, CG_Iter &cg)
+{  
+    
+    if ( ((iiter % gparams.verbose_int) == 0) && (gparams.verbose > 1) ){
+
+        double current_obj = 0.0;
+        double max_diff = 0.0;    
+        // Get the current objective value
+        if (gparams.all_obj.size() > 0) {
+            current_obj = gparams.all_obj[0]->hist_obj(0,iiter);
+            max_diff = 0.0;
+            
+            // Find the biggest objective value difference from current, in the last N_HIST_TEMP iterations
+            for (int i = 0; i < N_HIST_TEMP; i++) {
+                if ((iiter - i) < 0) {break;}
+                double obj = gparams.all_obj[0]->hist_obj(0,iiter - i);
+                double diff = fabs(current_obj - obj);
+                if (diff > max_diff) {
+                    max_diff = diff;
+                }
+            }
+            // Normalize
+            max_diff /= current_obj;
+        }
+
+
+        cout << "~~~~~~~  Update iiter = " << iiter << "  ~~~~~~~" << endl;
+        cout << "   CG iterations = " << cg.hist_n_iter[iiter] << endl;
+        cout << "   current_obj = " << current_obj << endl;
+        cout << "   max_diff = " << max_diff << endl;
+        cout << "   total_n_feval = " << gparams.total_n_feval << endl;
+        
+        
+        
+        for (int i = 0; i < gparams.all_op.size(); i++) {
+            cout << "   *** " << gparams.all_op[i]->name << endl
+            << "     --  Checks: " << gparams.all_op[i]->hist_check.col(gparams.last_iiter).transpose() << endl
+            << "     --  Weights: " << gparams.all_op[i]->weight.transpose() << endl
+            << "     --  r_feas: " << gparams.all_op[i]->hist_feas.col(iiter).transpose() << endl;
+        }
+
+
+
+    }
+}
+
 int do_checks(GroptParams &gparams, int iiter, VectorXd &X)
 {    
+    double current_obj = 0.0;
+    double max_diff = 0.0;    
     // Get the current objective value
-    double current_obj = gparams.all_obj[0]->hist_obj(0,iiter);
-    double max_diff = 0.0;
-    
-    // Find the biggest objective value difference from current, in the last N_HIST_TEMP iterations
-    for (int i = 0; i < N_HIST_TEMP; i++) {
-        if ((iiter - i) < 0) {break;}
-        double obj = gparams.all_obj[0]->hist_obj(0,iiter - i);
-        double diff = fabs(current_obj - obj);
-        if (diff > max_diff) {
-            max_diff = diff;
+    if (gparams.all_obj.size() > 0) {
+        current_obj = gparams.all_obj[0]->hist_obj(0,iiter);
+        max_diff = 0.0;
+        
+        // Find the biggest objective value difference from current, in the last N_HIST_TEMP iterations
+        for (int i = 0; i < N_HIST_TEMP; i++) {
+            if ((iiter - i) < 0) {break;}
+            double obj = gparams.all_obj[0]->hist_obj(0,iiter - i);
+            double diff = fabs(current_obj - obj);
+            if (diff > max_diff) {
+                max_diff = diff;
+            }
         }
+        // Normalize
+        max_diff /= current_obj;
     }
-    // Normalize
-    max_diff /= current_obj;
 
     // Sum up all of the check values, (0 is pass so anything greater than 0 does not pass)
     double all_check = 0.0;
     for (int i = 0; i < gparams.all_op.size(); i++) {
         all_check += gparams.all_op[i]->hist_check.col(iiter).sum();
     }
-
+    
     // cout << "    do_check Iter = " << iiter << "  " << current_obj << "  " << max_diff << "  " << all_check << endl;
 
+    
     if ((max_diff < gparams.d_obj_thresh) && (all_check < 0.5)  && (iiter > 0)) {
+        // The waveform has converged and passed all checks
         if (gparams.verbose > 0) {
             cout << "optimize.cpp do_checks() passed!  iiter = " << iiter << "  " << current_obj << "  " << max_diff << "  " << all_check << endl;
         }
+        gparams.final_good = 2; // Converged and passed checks
+        return 1;
+    } else if ((gparams.total_n_feval > (gparams.N_feval - 1000)) && (all_check < 0.5)  && (iiter > 0)) {
+        // Waveforms passed checks, but did not converge (and within 1000 f_eval of f_eval limit)
+        if (gparams.verbose > 0) {
+            cout << "optimize.cpp do_checks() semi-passed!  iiter = " << iiter << "  " << current_obj << "  " 
+            << max_diff << "  " << gparams.total_n_feval << "  " << gparams.N_feval << "  " << all_check << endl;
+        }
+        gparams.final_good = 1; // Passed checks, didn't converge
+        return 1;
+    } else if (gparams.total_n_feval > gparams.N_feval) {
+        // Did too many f_eval and did not converge or pass checks
+        if (gparams.verbose > 0) {
+            cout << "optimize.cpp do_checks() failed, too many f_eval  iiter = " << iiter << "  " << gparams.total_n_feval << "  " << gparams.N_feval << "  " << all_check << endl;
+        }
+        gparams.final_good = 0;
         return 1;
     } else {
+        gparams.final_good = 0;
         return 0;
     }
 
@@ -109,35 +178,36 @@ void optimize(GroptParams &gparams, VectorXd &out)
     VectorXd X;
     X = gparams.X0;
 
-    // Initialize the CG iteration class
-    CG_Iter cg(gparams.N, gparams.cg_niter, 
-                gparams.cg_resid_tol, gparams.cg_abs_tol);
+    MatrixXd Xhist;
+    Xhist.setZero(N_HIST_TEMP, gparams.Naxis*gparams.N);
 
+    // Initialize the CG iteration class
+    CG_Iter cg(gparams.Naxis*gparams.N, gparams.cg_niter, 
+                gparams.cg_resid_tol, gparams.cg_abs_tol);
 
     for (int i = 0; i < gparams.all_op.size(); i++) {
         gparams.all_op[i]->init(X, gparams.do_init);
     }
 
-    // cout << endl << "***" << endl;
-    // for (int i = 0; i < gparams.all_op.size(); i++) {
-    //     cout << gparams.all_op[i]->name << "  --  " << gparams.all_op[i]->U0.squaredNorm() << "  --  " << 
-    //     gparams.all_op[i]->Y0.squaredNorm() << "  --  " << gparams.all_op[i]->weight.transpose() << endl;
-    // }
-    // cout << "***" << endl << endl;
+    // Number of function evaluations (counts CG iterations)
+    gparams.total_n_feval = 0;
 
     // Actual iterations
     for (int iiter = 0; iiter < gparams.N_iter; iiter++) {
+
         // Store what iteration we are on for later array indexing
         gparams.last_iiter = iiter;
 
         // Do CG iterations
         X = cg.do_CG(gparams.all_op, gparams.all_obj, X);
 
+        gparams.total_n_feval += cg.hist_n_iter[iiter];
+
         // Update all constraints (do prox operations)        
         for (int i = 0; i < gparams.all_op.size(); i++) {
             gparams.all_op[i]->update(X, iiter);
         }
-        
+
         // Compute objective values if there are some
         for (int i = 0; i < gparams.all_obj.size(); i++) {
             gparams.all_obj[i]->get_obj(X, iiter);
@@ -150,16 +220,11 @@ void optimize(GroptParams &gparams, VectorXd &out)
 
         // Reweight constraints
         do_globalreweight(gparams, iiter);
-    }
 
-    // Calculate the total number of CG iterations that were used
-    int n_feval = 0;
-    for (int i = 0; i < cg.hist_n_iter.size(); i++) {
-        n_feval += cg.hist_n_iter[i];
+        logger(gparams, iiter, X, cg);
     }
 
     out = X;
-    gparams.total_n_feval = n_feval;
 
     return;
 }

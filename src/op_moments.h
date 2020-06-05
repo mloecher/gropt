@@ -17,7 +17,7 @@ class Op_Moments : public Operator
         MatrixXd moment_params;
         VectorXd mod;
 
-        Op_Moments(int N, double dt, int Nc);
+        Op_Moments(int N, int Naxis, double dt, int Nc);
         virtual void set_params_zeros(int N_moments, double moment_tol);
         virtual void set_params(int N_moments, double* moment_params);
         virtual void set_params(MatrixXd &moment_params_in);

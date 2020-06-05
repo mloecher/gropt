@@ -10,14 +10,17 @@ using namespace std;
 
 #define N_HIST_MAX 100000
 
-Operator::Operator(int N, double dt, int Nc, int Ax_size, bool row_constraints) 
-    : N(N), 
+Operator::Operator(int N, int Naxis, double dt, int Nc, int Ax_size, bool row_constraints) 
+    : N(N),
+    Naxis(Naxis), 
     dt(dt), 
     Nc(Nc), 
     Ax_size(Ax_size), 
     row_constraints(row_constraints)
 {
     name = "OperatorMain";
+
+    Ntot = Naxis * N;
 
     weight.setOnes(Nc);
     gamma.setOnes(Nc);
@@ -35,7 +38,7 @@ Operator::Operator(int N, double dt, int Nc, int Ax_size, bool row_constraints)
     hist_feas.setZero(Nc, N_HIST_MAX);
     hist_obj.setZero(Nc, N_HIST_MAX);
 
-    x_temp.setZero(N);
+    x_temp.setZero(Ntot);
     Ax_temp.setZero(Ax_size);
 
     Y0.setZero(Ax_size);
@@ -64,10 +67,13 @@ Operator::Operator(int N, double dt, int Nc, int Ax_size, bool row_constraints)
     weight_min = 1.0e-4;
     weight_max = 1.0e64;
 
-    fixer.setOnes(N);
-    fixer(0) = 0.0;
-    fixer(N-1) = 0.0;
-    inv_vec.setOnes(N);
+    fixer.setOnes(Ntot);
+    for (int j = 0; j < Naxis; j++) {
+        fixer((j*N)) = 0.0;
+        fixer((j*N)+(N-1)) = 0.0;
+    }
+    
+    inv_vec.setOnes(Ntot);
 
     allocate_rwvecs();
 }
@@ -291,7 +297,6 @@ void Operator::init(VectorXd &X, bool do_init)
         du.setZero();
         dhhat.setZero();
         dghat.setZero();
-        
         prep_y(X);
     }
 }

@@ -213,10 +213,10 @@ void gropt_legacy(double **G_out, int *N_out, double **ddebug, int verbose,
 
     // This is where I may need to start the loops?  Or I need some type of reinitialization of everything
 
-    Op_Moments *opM = new Op_Moments(N, dt, N_moments);
-    Op_Slew *opS = new Op_Slew(N, dt);
-    Op_Gradient *opG = new Op_Gradient(N, dt);
-    Op_BVal *opB = new Op_BVal(N, dt);
+    Op_Moments *opM = new Op_Moments(N, Naxis, dt, N_moments);
+    Op_Slew *opS = new Op_Slew(N, Naxis, dt);
+    Op_Gradient *opG = new Op_Gradient(N, Naxis, dt);
+    Op_BVal *opB = new Op_BVal(N, Naxis, dt);
 
     opM->set_inv_vec(inv_vec);
     opM->set_fixer(fixer);
@@ -440,4 +440,42 @@ void python_wrapper_warmstart_v1(double *params0, double *params1, double **out0
     cout << "***" << endl << endl;
     
     cout << "Done python_wrapper_warmstart_v1!" << endl << endl;
+}
+
+
+
+void diff_duty_cycle(double dt, double T_90, double T_180, double T_readout, double TE, 
+                     int N_moments, double gmax, double smax, double bval, double duty_cycle,
+                     double **out0, double **out1, double **out2, int **outsize) 
+{
+    double moment_tol = 1.0e-4;
+    
+    GroptParams gparams;
+    gparams.verbose = 2;
+    gparams.N_iter = 5000;
+    gparams.cg_resid_tol = 1.0e-3;
+    
+    duty_diff(gparams, dt, bval, T_90, T_180, T_readout, TE, gmax, smax, N_moments, moment_tol, false, duty_cycle);
+
+    VectorXd out;
+    optimize(gparams, out);
+
+    cout << "Final " << gparams.total_n_feval << endl;
+
+    int N_out0 = out.size();
+    *out0 = new double[N_out0];
+    for(int i = 0; i < N_out0; i++) {
+        out0[0][i] = out(i);
+    }
+
+    int N_out1 = 16;
+    *out1 = new double[N_out1];
+    out1[0][0] = gparams.final_good;
+    out1[0][1] = gparams.last_iiter;
+    out1[0][2] = gparams.total_n_feval;
+
+    *outsize = new int[3];
+    outsize[0][0] = N_out0;
+    outsize[0][1] = N_out1;
+    // outsize[0][2] = N_out2;
 }

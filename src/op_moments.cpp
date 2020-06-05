@@ -8,12 +8,12 @@ using namespace std;
 
 #include "op_moments.h"
 
-Op_Moments::Op_Moments(int N, double dt, int Nc) 
-    : Operator(N, dt, Nc, Nc, true)
+Op_Moments::Op_Moments(int N, int Naxis, double dt, int Nc) 
+    : Operator(N, Naxis, dt, Nc, Nc, true)
 {
     name = "Moments";
     moment_params.setZero(Nc, 7);
-    A.setZero(Nc, N);
+    A.setZero(Nc, Naxis*N);
     mod.setZero(Nc);
     do_rw = true;     
 }
@@ -23,15 +23,37 @@ void Op_Moments::prep_A()
     A.setZero();
     spec_norm2.setZero();
     
-    double ref0 = 0.0; // This is used later to offset the waveform start time
     for(int i = 0; i < Nc; i++) {
-        for(int j = 0; j < N; j++) {
+
+        double axis = moment_params(i, 0);
+        double order = moment_params(i, 1);
+        double ref0 = moment_params(i, 2);
+        double start = moment_params(i, 3);
+        double stop = moment_params(i, 4);
+
+        // Default start and stop is an entire axis
+        int i_start = axis*N;
+        int i_stop = (axis+1)*N;
+
+        // Defined start and stop indices
+        if (start > 0) {
+            i_start = (int)(start+0.5) + axis*N;
+        }
+        if (stop > 0) {
+            i_stop = (int)(stop+0.5) + axis*N;
+        }
+
+        for(int j = i_start; j < i_stop; j++) {
             double order = moment_params(i, 1);
-            double val = 1000.0 * 1000.0 * dt * pow( (1000.0 * (dt*j + ref0)), order);
+            double jj = j - axis*N;
+            double val = 1000.0 * 1000.0 * dt * pow( (1000.0 * (dt*jj + ref0)), order);
             
             A(i, j) = val * inv_vec(j);
             spec_norm2(i) += val*val;
         }
+
+        spec_norm2(i) = sqrt(spec_norm2(i));
+        // spec_norm2(i) = 1.0;
     }
 }
 

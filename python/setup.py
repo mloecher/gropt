@@ -19,7 +19,7 @@ from Cython.Build import cythonize
 import numpy
 
 # This is all the cpp files that need compiling
-sources = ['cg_iter', 'op_bval', 'op_gradient', 'op_main', 'op_moments', 'op_slew', 'gropt_params', 'optimize', 'diff_utils']
+sources = ['cg_iter', 'op_bval', 'op_gradient', 'op_main', 'op_moments', 'op_slew', 'op_duty', 'gropt_params', 'optimize', 'diff_utils']
 sourcefiles = ['gropt.pyx',] + ['../src/%s.cpp' % x for x in sources]
 
 include_dirs = [".",  "../src", numpy.get_include()]

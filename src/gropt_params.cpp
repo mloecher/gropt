@@ -2,23 +2,24 @@
 #include "optimize.h"
 
 GroptParams::GroptParams() {
+    Naxis = 1;
     N_iter = 5000;
-    N_feval = 20000;
+    N_feval = 30000;
 
-    cg_niter = 5000;
-    cg_resid_tol = 1.0e-3;
+    cg_niter = 10000;
+    cg_resid_tol = 5.0e-3;
     cg_abs_tol = 1.0e-16;
 
-    grw_interval = 100;
-    grw_start = 200;
-    grw_scale = 1.2;
+    grw_interval = 16;
+    grw_start = 32;
+    grw_scale = 8.0;
 
     cushion = 1e-2;
 
     // reweighting defaults here
-    rw_scalelim = 2.0;
-    rw_interval = 8;
-    rw_eps = 1.0e-6;
+    rw_scalelim = 1.5;
+    rw_interval = 16;
+    rw_eps = 1.0e-16;
     e_corr = 0.5;
     weight_min = 1.0e-4;
     weight_max = 1.0e64;
@@ -27,6 +28,9 @@ GroptParams::GroptParams() {
 
     do_init = true;
     verbose = 0;
+    verbose_int = 20;
+
+    final_good = 0;
 }
 
 GroptParams::~GroptParams() {
@@ -39,6 +43,8 @@ GroptParams::~GroptParams() {
     }
 }
 
+// Use this function to propogate the values to the individual constraints
+// Mainly needed to reset other values when cushion changes
 void GroptParams::update_vals()
 {
     for (int i = 0; i < all_op.size(); i++) {

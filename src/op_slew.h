@@ -15,7 +15,7 @@ class Op_Slew : public Operator
         double smax;
 
     public:
-        Op_Slew(int N, double dt);
+        Op_Slew(int N, int Naxis, double dt);
         virtual void set_params(double smax_in);
         virtual void forward(VectorXd &X, VectorXd &out, bool apply_weight, int norm, bool no_balance);
         virtual void transpose(VectorXd &X, VectorXd &out, bool apply_weight, int norm);

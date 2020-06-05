@@ -8,8 +8,8 @@ using namespace std;
 
 #include "op_slew.h"
 
-Op_Slew::Op_Slew(int N, double dt) 
-    : Operator(N, dt, 1, (N-1), false)
+Op_Slew::Op_Slew(int N, int Naxis, double dt) 
+    : Operator(N, Naxis, dt, 1, Naxis*(N-1), false)
 {
     name = "Slew";
     do_rw = true; 
@@ -36,8 +36,10 @@ void Op_Slew::set_params(double smax_in)
 void Op_Slew::forward(VectorXd &X, VectorXd &out, 
                          bool apply_weight, int norm, bool no_balance)
 {
-    for (int i = 0; i < (N-1); i++) {
-        out(i) = (X(i+1) - X(i))/dt;
+    for (int j = 0; j < Naxis; j++) {
+        for (int i = 0; i < (N-1); i++) {
+            out(j*(N-1)+i) = (X(j*N+i+1) - X(j*N+i))/dt;
+        }
     }
 
     if (apply_weight) {
@@ -57,11 +59,13 @@ void Op_Slew::forward(VectorXd &X, VectorXd &out,
 void Op_Slew::transpose(VectorXd &X, VectorXd &out, 
                            bool apply_weight, int norm)
 {
-    out(0) = -X(0) / dt;
-    for (int i = 1; i < (N-1); i++) {
-        out(i) = (X(i-1) - X(i)) / dt;
+    for (int j = 0; j < Naxis; j++) {
+        out(j*N+0) = -X(j*(N-1)+0) / dt;
+        for (int i = 1; i < (N-1); i++) {
+            out(j*N+i) = (X(j*(N-1)+i-1) - X(j*(N-1)+i)) / dt;
+        }
+        out(j*N+N-1) = X(j*(N-1)+N-2) / dt;
     }
-    out(N-1) = X(N-2) / dt;
 
     if (norm == 2) {
         out.array() /= spec_norm2(0);

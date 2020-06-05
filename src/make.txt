@@ -1,4 +1,4 @@
 g++ -O3 -I. -march=native -DEIGEN_NO_DEBUG diff_utils.cpp cg_iter.cpp op_bval.cpp op_gradient.cpp op_main.cpp op_moments.cpp op_slew.cpp gropt_params.cpp optimize.cpp wrappers.cpp -o opt -lm -fopenmp
 
 
-g++ -O3 -I. -march=native cg_iter.cpp op_bval.cpp op_gradient.cpp op_main.cpp op_moments.cpp op_slew.cpp gropt_params.cpp optimize.cpp wrappers.cpp -o opt -lm -fopenmp
+g++ -O3 -I. -march=native -DEIGEN_NO_DEBUG diff_utils.cpp cg_iter.cpp op_bval.cpp op_gradient.cpp op_main.cpp op_moments.cpp op_slew.cpp gropt_params.cpp optimize.cpp wrappers.cpp scratch.cpp op_duty.cpp main.cpp -o opt -lm -fopenmp

@@ -12,6 +12,10 @@ cdef extern from "../src/wrappers.cpp":
                                         double T_readout, double T_90, double T_180, int diffmode, double dt_out,
                                         int N_eddy, double *eddy_params, double search_bval, double slew_reg, int Naxis)
 
+    void _diff_duty_cycle "diff_duty_cycle"(double dt, double T_90, double T_180, double T_readout, double TE, 
+                                        int N_moments, double gmax, double smax, double bval, double duty_cycle,
+                                        double **out0, double **out1, double **out2, int **outsize) 
+
 def array_prep(A, dtype, linear=True):
     if not A.flags['C_CONTIGUOUS']:
         A = np.ascontiguousarray(A)
@@ -22,6 +26,9 @@ def array_prep(A, dtype, linear=True):
         A = A.ravel()
 
     return A 
+
+
+
 
 
 @cython.boundscheck(False) 
@@ -242,3 +249,30 @@ def gropt(params, verbose=0):
     debug_out[15] = run_time
 
     return G_return, debug_out
+
+
+
+@cython.boundscheck(False) 
+@cython.wraparound(False)
+def diff_duty_cycle(dt, T_90, T_180, T_readout, TE, 
+                N_moments, gmax, smax, bval, duty_cycle, verbose=0):
+
+
+
+    cdef double *out0
+    cdef double *out1
+    cdef double *out2
+    cdef int *outsize
+
+    _diff_duty_cycle(dt, T_90, T_180, T_readout, TE, 
+                     N_moments, gmax, smax, bval, duty_cycle, &out0, &out1, &out2, &outsize)
+
+    G_return = np.empty(outsize[0])
+    for i in range(outsize[0]):
+        G_return[i] = out0[i]
+
+    debug_return = np.empty(outsize[1])
+    for i in range(outsize[1]):
+        debug_return[i] = out1[i]
+
+    return G_return, debug_return

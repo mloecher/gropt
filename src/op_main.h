@@ -12,6 +12,9 @@ class Operator
 {  
     public:   
         int N;
+        int Naxis;
+        int Ntot;
+
         double dt;
         string name;
 
@@ -23,7 +26,7 @@ class Operator
         VectorXd tol;
         VectorXd target;
 
-        bool row_constraints; // Are there multiple individual values constraints?
+        bool row_constraints; // Are there multiple individual value constraints? (ie the moment constraint, or eddy current lambda)
         int Nc; // Number of constraints within the operator
         int Ax_size; // Vector size of Ax
         VectorXd spec_norm2;
@@ -76,7 +79,7 @@ class Operator
 
         double current_obj;
         
-        Operator(int N, double dt, int Nc, int Ax_size, bool row_constraints);
+        Operator(int N, int Naxis, double dt, int Nc, int Ax_size, bool row_constraints);
         void allocate_rwvecs();    
         void reweight();
         void update(VectorXd &X, int iiter);

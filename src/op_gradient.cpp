@@ -8,12 +8,12 @@ using namespace std;
 
 #include "op_gradient.h"
 
-Op_Gradient::Op_Gradient(int N, double dt) 
-    : Operator(N, dt, 1, N, false)
+Op_Gradient::Op_Gradient(int N, int Naxis, double dt) 
+    : Operator(N, Naxis, dt, 1, Naxis*N, false)
 {
     name = "Gradient"; 
     do_rw = false;
-    set_vals.setZero(N);
+    set_vals.setZero(Ntot);
 }
 
 void Op_Gradient::set_params(double gmax_in)
@@ -33,8 +33,10 @@ void Op_Gradient::set_params(double gmax_in)
     gmax = gmax_in;
 
     set_vals.setOnes();
-    set_vals(0) = 0.0;
-    set_vals(N-1) = 0.0;
+    for (int j = 0; j < Naxis; j++) {
+        set_vals((j*N)) = 0.0;
+        set_vals((j*N) + (N-1)) = 0.0;
+    }
     set_vals.array() *= -9999999.0;
 
 }
