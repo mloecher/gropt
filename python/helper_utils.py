@@ -196,9 +196,12 @@ def get_moments(G, T_readout, dt, diffmode=0):
     return out
 
 def get_bval(G, params):
-    G = G[0]  # TODO: 3-axis case, right now just assumes 1 axis
+    if (G.squeeze().ndim == 2):
+        G = G[0]  # TODO: 3-axis case, right now just assumes 1 axis
 
     TE = params['TE']
+    if TE < 1.0:
+        TE *= 1e3
     T_readout = params['T_readout']
     #dt = (TE-T_readout) * 1.0e-3 / G.size
     dt = params['dt']
@@ -208,7 +211,6 @@ def get_bval(G, params):
     
     INV = np.ones(G.size)
     INV[tINV:] = -1
-    
     Gt = 0
     bval = 0
     for i in range(G.size):
@@ -249,8 +251,11 @@ def plot_moments(G, T_readout, dt):
 
 
 def get_moment_plots(G, T_readout, dt, diffmode = 1):
-    G = G[0]  # TODO: 3-axis case, right now just assumes 1 axis
+    if (G.squeeze().ndim == 2):
+        G = G[0]  # TODO: 3-axis case, right now just assumes 1 axis
 
+    if T_readout < 1.0:
+        T_readout *= 1000.0
     TE = G.size*dt*1e3 + T_readout
     tINV = int(np.floor(TE/dt/1.0e3/2.0))
     #GAMMA   = 42.58e3; 

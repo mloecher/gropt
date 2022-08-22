@@ -24,7 +24,7 @@ sources = ['cg_iter', 'op_bval', 'op_gradient', 'op_main', 'op_moments', 'op_sle
             'gropt_params', 'optimize', 'diff_utils']
 sourcefiles = ['gropt.pyx',] + ['../src/%s.cpp' % x for x in sources]
 
-#include_dirs = [".",  "../src", numpy.get_include()]
+#include_dirs = [".",  "../src", numpy.get_include()] # MJM
 include_dirs=[".",  "./src", "/usr/local/include/", numpy.get_include()],
 library_dirs = [".", "../src"]
 
@@ -32,8 +32,11 @@ library_dirs = [".", "../src"]
 if is_platform_windows:
     extra_compile_args = []
 else:
-    extra_compile_args = ["-std=c++11"]
+#    extra_compile_args = []
+    extra_compile_args = ["-std=c++11"]  # MJM
 
+
+# MJM
 # extensions = [Extension("gropt",
 #                 sourcefiles,
 #                 language = "c++",
@@ -43,6 +46,7 @@ else:
 #                 # undef_macros=['NDEBUG'], # This will re-enable the Eigen assertions
 #             )]
 
+# MJM
 extensions = [Extension("gropt",
                     sourcefiles,
                     language="c++",
