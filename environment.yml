@@ -1,0 +1,10 @@
+name: environment
+dependencies:
+  - python
+  - numpy
+  - pip
+  - cython
+  - matplotlib
+  - seaborn
+  - pip:
+      - -e .
