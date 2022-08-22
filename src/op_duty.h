@@ -1,5 +1,5 @@
-#ifndef OP_GRADIENT_H
-#define OP_GRADIENT_H
+#ifndef OP_DUTY_H
+#define OP_DUTY_H
 
 #include <iostream> 
 #include <string>
@@ -9,20 +9,14 @@
 using namespace Eigen;
 using namespace std; 
 
-class Op_Gradient : public Operator
+class Op_Duty : public Operator
 {  
-    protected:
-        double gmax;
-        VectorXd set_vals;
-
     public:
-        Op_Gradient(int N, int Naxis, double dt);
-        virtual void set_params(double gmax_in);
-        virtual void set_params(double gmax_in, VectorXd &set_vals_in);
+        Op_Duty(int N, int Naxis, double dt);
         virtual void forward(VectorXd &X, VectorXd &out, bool apply_weight, int norm, bool no_balance);
         virtual void transpose(VectorXd &X, VectorXd &out, bool apply_weight, int norm);
         virtual void prox(VectorXd &X);
-        virtual void check(VectorXd &X, int iiter);
+        virtual void get_obj(VectorXd &X, int iiter);
 
 };
 

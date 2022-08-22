@@ -1,47 +1,29 @@
-#ifndef CVX_OPPNS_H
-#define CVX_OPPNS_H
+#ifndef OP_PNS_H
+#define OP_PNS_H
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
+#include <iostream> 
+#include <string>
+#include "Eigen/Dense"
+#include "op_main.h"
 
-#include "cvx_matrix.h"
+using namespace Eigen;
+using namespace std; 
 
-typedef struct {
-    int active;
-    int verbose;
-    
-    int N;
-    int Naxis;
-    int Ntotal;
-    
-    int ind_inv;
-    double dt;
-    double thresh;
-    double weight;
+class Op_PNS : public Operator
+{  
+    protected:
+        double stim_thresh;
+        VectorXd coeff;
 
-    int n_conv;
+    public:
+        Op_PNS(int N, int Naxis, double dt);
+        virtual void set_params(double stim_thresh_in);
+        virtual void forward(VectorXd &X, VectorXd &out, bool apply_weight, int norm, bool no_balance);
+        virtual void transpose(VectorXd &X, VectorXd &out, bool apply_weight, int norm);
+        virtual void prox(VectorXd &X);
+        virtual void check(VectorXd &X, int iiter);
 
-    cvx_mat coeff; 
-    cvx_mat Px;
-
-    cvx_mat zP;
-    cvx_mat zPbar;
-    cvx_mat zPbuff;
-    cvx_mat Ptau;
+};
 
 
-} cvxop_pns;
-
-void cvxop_pns_init(cvxop_pns *opP, int N, int Naxis, double dt, int ind_inv, double thresh, double init_weight, int verbose);
-int cvxop_pns_check(cvxop_pns *opP, cvx_mat *G);
-void cvxop_pns_add2tau(cvxop_pns *opP, cvx_mat *tau_mat);
-void cvxop_pns_add2taumx(cvxop_pns *opP, cvx_mat *taumx);
-void cvxop_pns_update(cvxop_pns *opP, cvx_mat *txmx, double rr);
-int cvxop_pns_check(cvxop_pns *opP, cvx_mat *G);
-void cvxop_pns_reweight(cvxop_pns *opP, double weight_mod);
-
-
-
-
-#endif /* CVX_OPPNS_H */
+#endif

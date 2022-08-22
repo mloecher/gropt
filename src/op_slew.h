@@ -1,5 +1,5 @@
-#ifndef OP_MAXWELL_H
-#define OP_MAXWELL_H
+#ifndef OP_SLEW_H
+#define OP_SLEW_H
 
 #include <iostream> 
 #include <string>
@@ -9,20 +9,14 @@
 using namespace Eigen;
 using namespace std; 
 
-class Op_Maxwell : public Operator
+class Op_Slew : public Operator
 {  
     protected:
-        double tolerance;
-        // VectorXd set_vals;
-
-        int ind0;
-        int ind1;
-        int ind2;
+        double smax;
 
     public:
-        Op_Maxwell(int N, int Naxis, double dt);
-        virtual void set_params(double tol_in, int ind0_in, int ind1_in, int ind2_in);
-        virtual void set_params(double tol_in, VectorXd &set_vals_in, int ind0_in, int ind1_in, int ind2_in);
+        Op_Slew(int N, int Naxis, double dt);
+        virtual void set_params(double smax_in);
         virtual void forward(VectorXd &X, VectorXd &out, bool apply_weight, int norm, bool no_balance);
         virtual void transpose(VectorXd &X, VectorXd &out, bool apply_weight, int norm);
         virtual void prox(VectorXd &X);
