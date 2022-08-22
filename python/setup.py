@@ -18,25 +18,42 @@ except ImportError:
 from Cython.Build import cythonize
 import numpy
 
+# This is all the cpp files that need compiling
+sources = ['cg_iter', 'op_bval', 'op_gradient', 'op_main', 'op_moments', 'op_slew', 'op_maxwell',
+            'op_duty', 'op_eddy', 'op_eddyspect2', 'op_eddyspect', 'op_btensor', 'op_acoustic', 'op_girfec', 'op_pns',
+            'gropt_params', 'optimize', 'diff_utils']
+sourcefiles = ['gropt.pyx',] + ['../src/%s.cpp' % x for x in sources]
 
-sourcefiles = ['gropt.pyx', '../src/cvx_matrix.c', '../src/te_finder.c', '../src/op_gradient.c', '../src/op_maxwell.c', '../src/op_bval.c', '../src/op_beta.c', '../src/op_eddy.c', '../src/op_slewrate.c', '../src/op_moments.c', '../src/op_pns.c']
-
-include_dirs = [".",  "../src", numpy.get_include()]
+#include_dirs = [".",  "../src", numpy.get_include()]
+include_dirs=[".",  "./src", "/usr/local/include/", numpy.get_include()],
 library_dirs = [".", "../src"]
+
+# openmp stufff here
 if is_platform_windows:
     extra_compile_args = []
 else:
-    extra_compile_args = ['-std=c11']
+    extra_compile_args = ["-std=c++11"]
 
+# extensions = [Extension("gropt",
+#                 sourcefiles,
+#                 language = "c++",
+#                 include_dirs = include_dirs,
+#                 library_dirs = library_dirs,
+#                 extra_compile_args = extra_compile_args,
+#                 # undef_macros=['NDEBUG'], # This will re-enable the Eigen assertions
+#             )]
 
 extensions = [Extension("gropt",
-                sourcefiles,
-                language = "c",
-                include_dirs = include_dirs,
-                library_dirs = library_dirs,
-                extra_compile_args = extra_compile_args,
-            )]
+                    sourcefiles,
+                    language="c++",
+                    include_dirs=[".",  "./src", "/usr/local/include/", numpy.get_include()],
+                    library_dirs=[".", "./src", "/usr/local/lib/"],
+                    extra_compile_args=['-std=c++11', "-mmacosx-version-min=10.9"],
+                    extra_link_args=["-stdlib=libc++", "-mmacosx-version-min=10.9"],
+                   )]
 
 setup(
-    ext_modules = cythonize(extensions)
+    ext_modules = cythonize(extensions,
+                  compiler_directives={'language_level' : sys.version_info[0]},
+                  nthreads=8)
 )
