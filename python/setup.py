@@ -36,25 +36,25 @@ else:
     extra_compile_args = ["-std=c++11"]  # MJM
 
 
-# MJM
-# extensions = [Extension("gropt",
-#                 sourcefiles,
-#                 language = "c++",
-#                 include_dirs = include_dirs,
-#                 library_dirs = library_dirs,
-#                 extra_compile_args = extra_compile_args,
-#                 # undef_macros=['NDEBUG'], # This will re-enable the Eigen assertions
-#             )]
-
-# MJM
+# MJM - use this for Binder?
 extensions = [Extension("gropt",
-                    sourcefiles,
-                    language="c++",
-                    include_dirs=[".",  "./src", "/usr/local/include/", numpy.get_include()],
-                    library_dirs=[".", "./src", "/usr/local/lib/"],
-                    extra_compile_args=['-std=c++11', "-mmacosx-version-min=10.9"],
-                    extra_link_args=["-stdlib=libc++", "-mmacosx-version-min=10.9"],
-                   )]
+                sourcefiles,
+                language = "c++",
+                include_dirs = include_dirs,
+                library_dirs = library_dirs,
+                extra_compile_args = extra_compile_args,
+                # undef_macros=['NDEBUG'], # This will re-enable the Eigen assertions
+            )]
+
+# MJM - use this for my Macbook
+# extensions = [Extension("gropt",
+#                     sourcefiles,
+#                     language="c++",
+#                     include_dirs=[".",  "./src", "/usr/local/include/", numpy.get_include()],
+#                     library_dirs=[".", "./src", "/usr/local/lib/"],
+#                     extra_compile_args=['-std=c++11', "-mmacosx-version-min=10.9"],
+#                     extra_link_args=["-stdlib=libc++", "-mmacosx-version-min=10.9"],
+#                    )]
 
 setup(
     ext_modules = cythonize(extensions,
