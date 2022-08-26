@@ -24,8 +24,8 @@ sources = ['cg_iter', 'op_bval', 'op_gradient', 'op_main', 'op_moments', 'op_sle
             'gropt_params', 'optimize', 'diff_utils']
 sourcefiles = ['gropt.pyx',] + ['../src/%s.cpp' % x for x in sources]
 
-#include_dirs = [".",  "../src", numpy.get_include()] # MJM
-include_dirs=[".",  "./src", "/usr/local/include/", numpy.get_include()],
+include_dirs = [".",  "../src", numpy.get_include()] # MJM - use this for Binder
+#include_dirs=[".",  "./src", "/usr/local/include/", numpy.get_include()], # MJM - use this for my Macbook
 library_dirs = [".", "../src"]
 
 # openmp stufff here
@@ -36,7 +36,7 @@ else:
     extra_compile_args = ["-std=c++11"]  # MJM
 
 
-# MJM - use this for Binder?
+# MJM - use this for Binder
 extensions = [Extension("gropt",
                 sourcefiles,
                 language = "c++",
