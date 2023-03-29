@@ -32,9 +32,7 @@ void cvxop_bval_init(cvxop_bval *opB, int N, int ind_inv, double dt, double init
     cvxmat_alloc(&opB->Ap, N, 1);
 
     if (opB->active > 0) {
-
-            cvxmat_alloc(&opB->C, N, 1);
-
+        
             double tt;
             for (int i = 0; i < N; i++) {
                 tt = N-i;

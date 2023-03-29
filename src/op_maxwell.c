@@ -119,3 +119,12 @@ int cvxop_maxwell_check(cvxop_maxwell *opX, cvx_mat *G)
 
     return 0;
 }
+
+
+/*
+ * Free memory
+ */
+void cvxop_maxwell_destroy(cvxop_maxwell *opX)
+{
+    free(opX->x_store.vals);
+}

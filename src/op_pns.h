@@ -40,6 +40,7 @@ void cvxop_pns_add2taumx(cvxop_pns *opP, cvx_mat *taumx);
 void cvxop_pns_update(cvxop_pns *opP, cvx_mat *txmx, double rr);
 int cvxop_pns_check(cvxop_pns *opP, cvx_mat *G);
 void cvxop_pns_reweight(cvxop_pns *opP, double weight_mod);
+void cvxop_pns_destroy(cvxop_pns *opP);
 
 
 

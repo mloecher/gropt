@@ -234,3 +234,17 @@ int cvxop_pns_check(cvxop_pns *opP, cvx_mat *G)
 
     return bad_pns;
 }
+
+/*
+ * Free memory
+ */
+void cvxop_pns_destroy(cvxop_pns *opP)
+{
+    free(opP->coeff.vals);
+    free(opP->Ptau.vals);
+ 
+    free(opP->Px.vals);
+    free(opP->zP.vals);
+    free(opP->zPbuff.vals);
+    free(opP->zPbar.vals);
+}

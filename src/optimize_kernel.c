@@ -101,6 +101,7 @@ void cvx_optimize_kernel(cvx_mat *G, cvxop_gradient *opG, cvxop_slewrate *opD,
         opQ->zQ.vals[i] = 0.0;
     }
 
+    
     cvx_mat xbar;
     copyNewMatrix(G, &xbar);
     cvxmat_setvals(&xbar, 0.0);
@@ -437,6 +438,11 @@ void cvx_optimize_kernel(cvx_mat *G, cvxop_gradient *opG, cvxop_slewrate *opD,
     ddebug[7] = bad_slew;
     ddebug[8] = bad_moments;
     ddebug[9] = bad_gradient;
+
+    free(Ghist0.vals);
+    free(Ghist1.vals);
+    free(Gfullhist.vals);
+
 }
 
 void interp(cvx_mat *G, double dt_in, double dt_out, double TE, double T_readout) {
@@ -655,11 +661,16 @@ void run_kernel_diff(double **G_out, int *N_out, double **ddebug, int verbose,
     (*ddebug)[11] = opQ.norms.vals[1];
     (*ddebug)[12] = opQ.norms.vals[2];
 
+
     cvxop_gradient_destroy(&opG);
     cvxop_slewrate_destroy(&opD);
     cvxop_moments_destroy(&opQ);
     cvxop_beta_destroy(&opC);
     cvxop_bval_destroy(&opB);
+    cvxop_eddy_destroy(&opE);
+    cvxop_pns_destroy(&opP);
+    cvxop_maxwell_destroy(&opX);
+
 
     fflush(stdout);
 
@@ -782,12 +793,13 @@ void run_kernel_diff_fixeddt_fixG(double **G_out, int *N_out, double **ddebug, i
 }
 
 
-int main (void)
+int main (int argc, char *argv[] )
 {
     printf ("In optimize_kernel.c main function\n");
     
     // test_timer();
     test_TE_finders();
+
     return 0;
 }
 
@@ -834,7 +846,6 @@ void test_TE_finders()
     struct timeval start, end;
     double diff;
 
-
     // openMP TE finder example
     gettimeofday(&start, NULL);
     minTE_diff_par(&G, &N, &debug, 0, dt, gmax, smax, bval, 
@@ -845,16 +856,20 @@ void test_TE_finders()
     diff = (end.tv_sec - start.tv_sec) + 1.0e-6 * (end.tv_usec - start.tv_usec);
     printf("OpenMP operation took %.2f ms (TE = %.2f ms)\n", (1.0e3*diff), 1.0e3*N*dt);
 
+   
 
     // Single thread TE finder example
     gettimeofday(&start, NULL);
+    
     minTE_diff(&G, &N, &debug, 0, dt, gmax, smax, bval, 
-                        N_moments, moment_params, PNS_thresh, 
-                            T_readout, T_90, T_180, diffmode, dt_out, N_eddy, eddy_params, 1.0);
+                N_moments, moment_params, PNS_thresh, 
+                    T_readout, T_90, T_180, diffmode, dt_out, N_eddy, eddy_params, 1.0);
 
     gettimeofday(&end, NULL);
     diff = (end.tv_sec - start.tv_sec) + 1.0e-6 * (end.tv_usec - start.tv_usec);
     printf("Non-threaded operation took %.2f ms (TE = %.2f ms)\n", (1.0e3*diff), 1.0e3*N*dt);
+
+    free(moment_params);
 
     return;
 }

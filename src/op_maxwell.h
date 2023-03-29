@@ -32,5 +32,7 @@ void cvxop_maxwell_update(cvxop_maxwell *opX, cvx_mat *txmx, double rr);
 void cvxop_maxwell_add2taumx(cvxop_maxwell *opX, cvx_mat *taumx);
 void cvxop_maxwell_add2tau(cvxop_maxwell *opX, cvx_mat *tau_mat);
 int cvxop_maxwell_check(cvxop_maxwell *opX, cvx_mat *G);
+void cvxop_maxwell_destroy(cvxop_maxwell *opX);
+
 
 #endif /* CVX_OPMAXWELL_H */
