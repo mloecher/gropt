@@ -61,6 +61,9 @@ void minTE_diff(double **G_out, int *N_out, double **ddebug, int verbose,
         }
         T_range = T_hi - T_lo;
         
+        // We don't acutally use these, they were just for timing
+        free(*G_out);
+        free(*ddebug);
     }
     
     if (verbose > 0) {printf ("\n***Second Round***\n\n");}
@@ -98,6 +101,10 @@ void minTE_diff(double **G_out, int *N_out, double **ddebug, int verbose,
             T_lo = TE;
         }
         T_range = T_hi - T_lo;
+
+        // We don't acutally use these, they were just for timing
+        free(*G_out);
+        free(*ddebug);
         
     }
 
@@ -227,6 +234,7 @@ void minTE_diff_par_worker(double *res, int N_delim, int N, double T_lo, double 
     }
 
     free(N_out_delim);
+    free(par_all_G);
     free(TE_delim);
     free(bval_delim);
 }
