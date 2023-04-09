@@ -857,7 +857,6 @@ void test_TE_finders()
     printf("OpenMP operation took %.2f ms (TE = %.2f ms)\n", (1.0e3*diff), 1.0e3*N*dt);
 
     free(G);
-    free(debug);
 
     // Single thread TE finder example
     gettimeofday(&start, NULL);
